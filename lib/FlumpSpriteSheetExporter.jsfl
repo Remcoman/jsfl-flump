@@ -56,7 +56,7 @@ var FlumpSpriteSheetExporter = (function () {
 				}
 			}
 			
-			var spriteSheetPath = outputDir + "/atlas" + this.metadataPaths.length;
+			var spriteSheetPath = this.outputDir + "/atlas" + this.metadataPaths.length;
 			this.metadataPaths.push(spriteSheetPath + ".json");
 			
 			fl.trace("writing '" + spriteSheetPath + "'");
@@ -140,7 +140,6 @@ var FlumpSpriteSheetExporter = (function () {
 			
 			//add sprites to exporter
 			tl.layers[0].frames[0].elements.concat(tl.layers[1].frames[0].elements).forEach(function (element) {
-				fl.trace(element.libraryItem.name);
 				this.textureOrigins[element.libraryItem.name] = helpers.getTextureOrigin(element);
 			}, this);
 		},

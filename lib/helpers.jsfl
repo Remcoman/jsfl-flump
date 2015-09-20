@@ -2,15 +2,6 @@
 var helpers = (function () {
 	var exports = {};
 	
-	exports.getPosition = function (el) {
-		var m = el.matrix;
-		var p = el.getTransformationPoint();
-		var tx = p.x * m.a + p.y * m.c + m.tx;
-		var ty = p.x * m.b + p.y * m.d + m.ty;
-		fl.trace(p.x + ":" + p.y);
-		return {x : tx, y : ty}; 
-	}
-	
 	var getFilterRadius = function (el, origin) {
 		if(el.elementType !== "instance") {
 			return origin;
@@ -48,6 +39,14 @@ var helpers = (function () {
 		});
 		
 		return origin;
+	}
+	
+	exports.getPosition = function (el) {
+		var m = el.matrix;
+		var p = el.getTransformationPoint();
+		var tx = p.x * m.a + p.y * m.c + m.tx;
+		var ty = p.x * m.b + p.y * m.d + m.ty;
+		return {x : tx, y : ty}; 
 	}
 	
 	exports.getTextureOrigin = function (el) {
