@@ -25,33 +25,31 @@ var FlumpSpriteSheetExporter = (function () {
 			
 			//write sprites until there is no more space
 			while(this.sprites.length) {
-				var element = this.sprites.shift(),
-					name = path.basename(element.libraryItem.name);
+				var element = this.sprites.shift();
 				
-				fl.trace("adding sprite '" + name + "' to spritesheet");
+				fl.trace("adding sprite '" + element.name + "' to spritesheet");
 				
-				this.exporter.addSymbol(element, name);
+				this.exporter.addSymbol(element, element.name);
 
 				if(this.exporter.overflowed) {
 					fl.trace("spritesheet overflowed!");
 					this.sprites.unshift(element);
-					this.exporter.removeSymbol(name);
+					this.exporter.removeSymbol(element.name);
 					break;
 				}
 			}
 			
 			//write flipbooks until there is no more space
 			while(this.flipbooks.length) {
-				var element = this.flipbooks.shift(),
-					name = path.basename(element.libraryItem.name);
+				var element = this.flipbooks.shift();
 				
-				fl.trace("adding flipbook '" + name + "' to spritesheet");
-				this.exporter.addSymbol(element, name, 0, element.libraryItem.timeline.frameCount);
+				fl.trace("adding flipbook '" + element.name + "' to spritesheet");
+				this.exporter.addSymbol(element, element.name, 0, element.libraryItem.timeline.frameCount);
 
 				if(this.exporter.overflowed) {
 					fl.trace("spritesheet overflowed!");
 					this.flipbooks.unshift(element);
-					this.exporter.removeSymbol(name);
+					this.exporter.removeSymbol(element.name);
 					break;
 				}
 			}
@@ -76,7 +74,8 @@ var FlumpSpriteSheetExporter = (function () {
 	var exports = function (doc) {
 		this.tempSymbols = [];
 		this.doc = doc;
-		this.textureOrigins = {};
+		this.spriteTextureOrigins = {};
+		this.flipbookTextureOrigins = {};
 	}
 	
 	exports.prototype = {
@@ -102,6 +101,21 @@ var FlumpSpriteSheetExporter = (function () {
 			this.tempSymbols.length = 0;
 		},
 		
+		_addItemToDoc : function (symbolName) {
+			this.doc.library.addItemToDocument({x : 0, y : 0}, symbolName);
+			var item = this.doc.selection[0];
+			item.name = this._symbolNameToInstanceName(symbolName) + "_"; //we append a _ because spritesheet exporter always adds 0000 after name
+			return item;
+		},
+		
+		_symbolNameToInstanceName : function (symbolName) {
+			return symbolName.split("/").join("$"); 
+		},
+		
+		_instanceNameToSymbolName : function (instanceName) {
+			return instanceName.split("$").join("/"); 
+		},
+		
 		_prepareTemporaryTimeline : function (symbolBucket) {
 			if(this.doc.library.itemExists("__temp")) {
 				this.doc.library.deleteItem("__temp");
@@ -118,7 +132,7 @@ var FlumpSpriteSheetExporter = (function () {
 			//add all sprites to layer 0
 			tl.setSelectedLayers(0, true);
 			symbolBucket.sprites.forEach(function (symbol) {
-				this.doc.library.addItemToDocument({x : 0, y : 0}, symbol.name);
+				this._addItemToDoc(symbol.name);
 			}, this);
 			
 			//add all flipbooks to layer 1
@@ -131,16 +145,19 @@ var FlumpSpriteSheetExporter = (function () {
 						symbol.timeline.deleteLayer(i);
 					}
 				}
-				this.doc.library.addItemToDocument({x : 0, y : 0}, symbol.name);
+				this._addItemToDoc(symbol.name);
 			}, this);
 		},
 		
 		_extractTextureOrigins : function () {
 			var tl = this.doc.getTimeline();
 			
-			//add sprites to exporter
-			tl.layers[0].frames[0].elements.concat(tl.layers[1].frames[0].elements).forEach(function (element) {
-				this.textureOrigins[element.libraryItem.name] = helpers.getTextureOrigin(element);
+			tl.layers[0].frames[0].elements.forEach(function (element) {
+				this.spriteTextureOrigins[element.libraryItem.name] = helpers.getTextureOrigin(this.doc, element);
+			}, this);
+			
+			tl.layers[1].frames[0].elements.forEach(function (element) {
+				this.flipbookTextureOrigins[element.libraryItem.name] = helpers.getTextureOriginInner(this.doc, element);
 			}, this);
 		},
 		
@@ -169,34 +186,34 @@ var FlumpSpriteSheetExporter = (function () {
 		},
 		
 		_readFrames : function (symbolBucket, metadataPaths) {
-			var frames = [], frameNumberRegex = new RegExp("([^0-9]+)([0-9]+)$");
+			var frames = [], frameNumberRegex = new RegExp("(.+)_([0-9]+)$");
 			
 			metadataPaths.forEach(function (path) {
 				var metadata = JSON.decode( FLfile.read(path) );
 				
 				for(var name in metadata.frames) {
-					
-					var regexpMatch = name.match(frameNumberRegex),
-						symbolName = regexpMatch[1],
-						frameNum = parseInt(regexpMatch[2], 10),
-						frameRect = metadata.frames[name].frame,
-						frameOrigin = this.textureOrigins[symbolName];
+
+					var regexpMatch  = name.match(frameNumberRegex),
+						symbolName   = this._instanceNameToSymbolName(regexpMatch[1]),
+						frameNum     = parseInt(regexpMatch[2], 10),
+						frameRect    = metadata.frames[name].frame;
 					
 					var frame = {
 						img : metadata.meta.image,
 						rect : [frameRect.x, frameRect.y, frameRect.w, frameRect.h],
-						origin : [frameOrigin.x, frameOrigin.y]
 					}
 					
 					//flash puts 0000 after name. Is this the frame number?
 					if(symbolBucket.hasFlipbook(symbolName)) { //symbol is flipbook
-						frame.name = symbolName + "#" + frameNum;
+						frame.symbol = symbolName + "#" + frameNum;
+						frame.origin = this.flipbookTextureOrigins[symbolName][frameNum];
 					}
 					else {
-						frame.name = symbolName;
+						frame.symbol = symbolName;
+						frame.origin = this.spriteTextureOrigins[symbolName];
 					}
 					
-					fl.trace("got frame '" + frame.name + "' for image " + metadata.meta.image);
+					fl.trace("got frame '" + frame.symbol + "' for image " + metadata.meta.image);
 					
 					frames.push(frame);
 				}

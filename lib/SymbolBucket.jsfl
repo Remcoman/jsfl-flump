@@ -13,7 +13,7 @@
 
 	exports.prototype = {
 		isValid : function () {
-			return this.flipbooks.length === 0 || this.sprites.length === 0;
+			return this.movies.length > 0 && (this.sprites.length > 0 || this.flipbooks.length > 0);
 		},
 		
 		symbolIsFlipbook : function (symbol) {

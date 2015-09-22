@@ -17,12 +17,14 @@ fl.outputPanel.clear();
 var processDocument = function (doc) {
 	//make sure we have nothing selected
 	doc.selectNone();
+	doc.exitEditMode();
 
 	//name of fla without the extension
 	var outputName = path.basename(doc.name, ".fla");
 
 	//ask for the output directory
-	var baseDir = fl.browseForFolderURL("Select the destination folder where the output folder '" + outputName + "' is created", path.dirname(doc.path) );
+	var initialDir = doc.path ? path.dirname(doc.path) : null;
+	var baseDir = fl.browseForFolderURL("Select the destination folder where the output folder '" + outputName + "' is created", initialDir );
 
 	if(baseDir) {
 		var outputDir = baseDir + "/" + outputName;
@@ -58,6 +60,7 @@ var processDocument = function (doc) {
 }
 
 var doc = fl.getDocumentDOM();
+
 if(doc) {
 	processDocument( fl.getDocumentDOM() );
 }
