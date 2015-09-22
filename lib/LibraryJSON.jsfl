@@ -191,6 +191,9 @@ var LibraryJSON = (function () {
 						kfJSON.motionEase = motionXMLToJSON(frame.getMotionObjectXML());
 						kfJSON.ease = 0;
 					}
+					else if(frame.hasCustomEase) {
+						//kfJSON.customEase = ;
+					}
 					else {
 						kfJSON.ease = -frame.tweenEasing / 100; //flump gets the acceleration which is the inverse of tweenEasing
 					}
