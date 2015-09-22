@@ -12,7 +12,7 @@ var motionXMLToJSON = (function () {
 
     var writeTimeMaps = function (timeMapArray, timeMapsXMLList) {
         for each (var timeMapXML in timeMapsXMLList) {
-            var timeMapJSON = {strength : parseInt(timeMapXML.@strength, 10), type : timeMapXML.@type}
+            var timeMapJSON = {strength : parseInt(timeMapXML.@strength, 10), type : timeMapXML.@type.toString()};
             timeMapArray.push(timeMapJSON);
         }
     }
@@ -26,12 +26,15 @@ var motionXMLToJSON = (function () {
     var writeKeyFrames = function (keyFrameArray, keyframeXMLList) {
         for each(var keyFrameXML in keyframeXMLList) {
             var kfJSON = {
-                timeMap : parseInt(keyFrameXML.@TimeMapIndex, 10),
                 anchor : splitAttribute(keyFrameXML.@anchor),
-                prev : splitAttribute(keyFrameXML.@prev),
+                prev : splitAttribute(keyFrameXML.@previous),
                 next : splitAttribute(keyFrameXML.@next),
                 timeValue : parseInt(keyFrameXML.@timevalue, 10)
             };
+
+			if(keyFrameXML.hasOwnProperty("@TimeMapIndex")) {
+				kfJSON.timeMap = parseInt(keyFrameXML.@TimeMapIndex, 10);
+			}
 
             keyFrameArray.push(kfJSON);
         }
@@ -47,7 +50,9 @@ var motionXMLToJSON = (function () {
         }
     }
 
-    return function (xml) {
+    return function (xmlString) {
+		var xml = new XML(xmlString);
+
         var json = {
             timeScale : parseInt(xml.@TimeScale, 10),
             timeMaps : [],

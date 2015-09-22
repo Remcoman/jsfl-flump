@@ -23,6 +23,10 @@ var LibraryJSON = (function () {
 		});
 		return kfs;
 	}
+
+	var sign = function (n) {
+		return (n > 0 ? 1 : (n < 0 ? -1 : 0));
+	}
 	
 	var exports	= function (doc) {		
 		this.movies = [];
@@ -80,9 +84,69 @@ var LibraryJSON = (function () {
 				layerJSON.keyframes.push(kfJSON);
 			}, this);
 		},
+
+		/**
+		 * Based on code of https://github.com/tconkling/flump/blob/master/exporter/src/main/as/flump/xfl/XflLayer.as
+		 * @private
+		 */
+		_normalizeSkewsInKeyFrames : function (jsonKeyFrames) {
+			for(var i= 0, c = jsonKeyFrames.length-1;i < c;i++) {
+				var kfJSON = jsonKeyFrames[i],
+					nextKfJSON = jsonKeyFrames[i+1];
+
+				if (kfJSON.skew[0] + Math.PI < nextKfJSON.skew[0]) {
+					nextKfJSON.skew[0] += -Math.PI * 2;
+				}
+				else if (kfJSON.skew[0] - Math.PI > nextKfJSON.skew[0]) {
+					nextKfJSON.skew[0] += Math.PI * 2;
+				}
+
+				if (kfJSON.skew[1] + Math.PI < nextKfJSON.skew[1]) {
+					nextKfJSON.skew[1] += -Math.PI * 2;
+				}
+				else if (kfJSON.skew[1] - Math.PI > nextKfJSON.skew[1]) {
+					nextKfJSON.skew[1] += Math.PI * 2;
+				}
+			}
+		},
+
+		_applyAdditionalRotation : function (jsonKeyFrames, flashKeyFrames) {
+			var additionalRotation = 0;
+
+			for(var i= 0, c = jsonKeyFrames.length-1;i < c;i++) {
+				var kfJSON = jsonKeyFrames[i],
+					nextKfJSON = jsonKeyFrames[i+1],
+					flashKf = flashKeyFrames[i];
+
+				if(flashKf.motionTweenRotate !== "none") {
+					var direction = flashKf.motionTweenRotate === "clockwise" ? 1 : -1;
+					direction *= sign(nextKfJSON.scale[0]) * sign(nextKfJSON.scale[1]);
+
+					while (direction < 0 && kfJSON.skewX < nextKfJSON.skewX) {
+						nextKfJSON.skewX -= Math.PI * 2;
+					}
+					while (direction > 0 && kfJSON.skewX > nextKfJSON.skewX) {
+						nextKfJSON.skewX += Math.PI * 2;
+					}
+					while (direction < 0 && kfJSON.skewY < nextKfJSON.skewY) {
+						nextKfJSON.skewY -= Math.PI * 2;
+					}
+					while (direction > 0 && kfJSON.skewY > nextKfJSON.skewY) {
+						nextKfJSON.skewY += Math.PI * 2;
+					}
+
+					additionalRotation += flashKf.motionTweenRotateTimes * Math.PI * 2 * direction;
+				}
+
+				nextKfJSON.skew[0] += additionalRotation;
+				nextKfJSON.skew[1] += additionalRotation;
+			}
+		},
 		
 		_writeKeyFrames : function (layerJSON, layer) {
-			getKeyframes(layer.frames).forEach(function (kf) {
+			var keyframes = getKeyframes(layer.frames);
+
+			keyframes.forEach(function (kf) {
 				var frame = kf.frame;
 				var kfJSON = {duration : frame.duration, index : kf.index};
 				
@@ -138,12 +202,83 @@ var LibraryJSON = (function () {
 					kfJSON.visible = false;
 				}
 			}, this);
+
+			this._normalizeSkewsInKeyFrames(layerJSON.keyframes);
+			this._applyAdditionalRotation(layerJSON.keyframes, keyframes);
+		},
+
+		_writeInterpolatedFrames : function (layerJSON, layer) {
+			var transform = {},
+				pivot = {},
+				flashKeyFrame = null,
+				kfJSON = {};
+
+			layer.frames.forEach(function (frame, index) {
+				if(!frame.startFrame) {
+					return; //empty frame!
+				}
+
+				if(frame.startFrame === index) { //keyframe
+					var element = frame.elements[0];
+
+					kfJSON.ref = element.libraryItem.name;
+					kfJSON.visible = element.visible;
+
+					var transformPoint = element.getTransformationPoint();
+					pivot.x = transformPoint.x;
+					pivot.y = transformPoint.y;
+					kfJSON.pivot = [roundBy(pivot.x, 4), roundBy(pivot.y, 4)];
+
+					flashKeyFrame = frame;
+				}
+
+				if(frame.tweenType === "none") {
+					return;
+				}
+
+				var matrix = flashKeyFrame.tweenObj.getGeometricTransform(index - flashKeyFrame.startFrame);
+				helpers.matrixToTransform(matrix, pivot, transform);
+
+				var colorTransform = flashKeyFrame.tweenObj.getColorTransform(index - flashKeyFrame.startFrame);
+
+				var fJSON = {
+					tweened : false,
+					index : index,
+					duration : 1,
+					pivot : kfJSON.pivot,
+					ref : kfJSON.ref
+				};
+
+				if(!kfJSON.visible) {
+					fJSON.visible = false;
+				}
+
+				fJSON.loc = [roundBy(transform.x, 3), roundBy(transform.y, 3)];
+
+				if(transform.scaleX !== 1 || transform.scaleY !== 1) {
+					fJSON.scale = [roundBy(transform.scaleX, 4), roundBy(transform.scaleY, 4)];
+				}
+
+				if(transform.skewX !== 0 || transform.skewY !== 0) {
+					fJSON.skew = [roundBy(transform.skewX, 4), roundBy(transform.skewY, 4)];
+				}
+
+				if(colorTransform.colorAlphaPercent !== 100) {
+					fJSON.alpha = roundBy(colorTransform.colorAlphaPercent / 100, 4);
+				}
+
+				layerJSON.keyframes.push(fJSON);
+			});
 		},
 		
 		_writeLayer : function (movieJSON, layer, isFlipbookLayer) {
 			var layerJSON = {name : layer.name, keyframes : []};
-			
-			if(!!isFlipbookLayer) {
+
+			if(layer.layerType === "guided") {
+				//for guided layers we will just write every keyframe to the json. Is there a better way?
+				this._writeInterpolatedFrames(layerJSON, layer);
+			}
+			else if(!!isFlipbookLayer) {
 				layerJSON.flipbook  = true;
 				this._writeFlipbookFrames(layerJSON, movieJSON.id, layer);
 			}
@@ -195,7 +330,11 @@ var LibraryJSON = (function () {
 		},
 		
 		toJSON : function () {
-			return JSON.encode(this);
+			return JSON.encode({
+				movies : this.movies,
+				textureGroups : this.textureGroups,
+				frameRate : this.frameRate
+			});
 		}
 	}
 	

@@ -61,8 +61,23 @@ var helpers = (function () {
 		}
 		
 		return false;
-	}	
-	
+	}
+
+	exports.matrixToTransform = function (matrix, pivot, outTransform) {
+		outTransform.skewY = Math.atan2(matrix.b, matrix.a);
+		outTransform.skewX = Math.atan2(-matrix.c, matrix.d);
+		outTransform.scaleX = Math.sqrt(matrix.a * matrix.a + matrix.b * matrix.b);
+		outTransform.scaleY = Math.sqrt(matrix.c * matrix.c + matrix.d * matrix.d);
+		outTransform.x = pivot.x * matrix.a + pivot.y * matrix.c + matrix.tx;
+		outTransform.y = pivot.x * matrix.b + pivot.y * matrix.d + matrix.ty;
+
+		return outTransform;
+	}
+
+	/**
+	 * @param el
+	 * @returns {{x: number, y: number}}
+	 */
 	exports.getPosition = function (el) {
 		var m = el.matrix;
 		var p = el.getTransformationPoint();
@@ -70,7 +85,12 @@ var helpers = (function () {
 		var ty = p.x * m.b + p.y * m.d + m.ty;
 		return {x : tx, y : ty}; 
 	}
-	
+
+	/**
+	 * @param doc
+	 * @param el
+	 * @returns {Array}
+	 */
 	exports.getTextureOriginInner = function (doc, el) {
 		var x = el.x, y = el.y, origins = [];
 		
@@ -97,8 +117,12 @@ var helpers = (function () {
 		
 		return origins;
 	}
-	
-	//get the real texture origins by copying the element and then converting that object to a bitmap.
+
+	/**
+	 * @param doc
+	 * @param el
+	 * @returns {{x: number, y: number}}
+	 */
 	exports.getTextureOrigin = function (doc, el) {
 		var x = el.x, y = el.y, originX = 0, originY = 0;
 		
@@ -116,7 +140,7 @@ var helpers = (function () {
 			originX = x - duplicate.left;
 			originY = y - duplicate.top;
 		}
-		catch(e) {} //make sure 
+		catch(e) {}
 
 		//cleanup
 		doc.library.deleteItem(duplicate.libraryItem.name);
