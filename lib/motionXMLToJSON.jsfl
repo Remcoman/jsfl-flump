@@ -1,3 +1,6 @@
+/**
+ * Wanted: someone who understands motion object xml
+ */
 var motionXMLToJSON = (function () {
 
     var idToProperty = {
@@ -40,24 +43,25 @@ var motionXMLToJSON = (function () {
         }
     }
 
-    var writeProperties = function (propertyMap, propertyXMLList) {
+    var writeProperties = function (propertyArray, propertyXMLList) {
         for each(var propertyXML in propertyXMLList) {
             var propName = idToProperty[propertyXML.@id.toString()];
             if(propName) {
-                var keyFrameArray = propertyMap[propName] = [];
-                writeKeyFrames(keyFrameArray, propertyXML.Keyframe);
+                var propJSON = {name : propName, keyframes : []};
+                propertyArray.push(propJSON);
+                writeKeyFrames(propJSON.keyframes, propertyXML.Keyframe);
             }
         }
     }
 
-    return function (xmlString) {
-		var xml = new XML(xmlString);
+    return function (frame) {
+		var xml = new XML(frame.getMotionObjectXML());
 
         var json = {
             timeScale : parseInt(xml.@TimeScale, 10),
             timeMaps : [],
             offset : [parseFloat(xml.metadata.Settings.@xformPtXOffsetPct), parseFloat(xml.metadata.Settings.@xformPtYOffsetPct)],
-            properties : {}
+            properties : []
         };
 
         writeTimeMaps(json.timeMaps, xml.TimeMap);

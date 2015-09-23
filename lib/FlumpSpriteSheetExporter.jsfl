@@ -20,7 +20,9 @@ var FlumpSpriteSheetExporter = (function () {
 			//reset all the values
 			this.exporter.layoutFormat = "JSON";
 			this.exporter.allowRotate = false;
-			this.exporter.allowTrimming = false;
+			this.exporter.allowTrimming = true;
+			this.exporter.algorithm = "maxRects";
+			this.exporter.borderPadding = 1;
 			this.exporter.maxSheetHeight = this.exporter.maxSheetWidth = 2048;
 			
 			//write sprites until there is no more space
@@ -196,7 +198,8 @@ var FlumpSpriteSheetExporter = (function () {
 					var regexpMatch  = name.match(frameNumberRegex),
 						symbolName   = this._instanceNameToSymbolName(regexpMatch[1]),
 						frameNum     = parseInt(regexpMatch[2], 10),
-						frameRect    = metadata.frames[name].frame;
+						frameRect    = metadata.frames[name].frame,
+						origin;
 					
 					var frame = {
 						img : metadata.meta.image,
@@ -206,12 +209,14 @@ var FlumpSpriteSheetExporter = (function () {
 					//flash puts 0000 after name. Is this the frame number?
 					if(symbolBucket.hasFlipbook(symbolName)) { //symbol is flipbook
 						frame.symbol = symbolName + "#" + frameNum;
-						frame.origin = this.flipbookTextureOrigins[symbolName][frameNum];
+						origin = this.flipbookTextureOrigins[symbolName][frameNum];
 					}
 					else {
 						frame.symbol = symbolName;
-						frame.origin = this.spriteTextureOrigins[symbolName];
+						origin = this.spriteTextureOrigins[symbolName];
 					}
+					
+					frame.origin = [origin.x, origin.y];
 					
 					fl.trace("got frame '" + frame.symbol + "' for image " + metadata.meta.image);
 					
