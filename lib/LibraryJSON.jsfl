@@ -192,73 +192,85 @@ var LibraryJSON = (function () {
 			}
 		},
 		
+		_createKeyFrameJSON : function (frame, index) {
+			if(!frame.elements.length) {
+				return null;
+			}
+			
+			var element = frame.elements[0];
+		
+			if(!element.libraryItem) {
+				return null;
+			}
+			
+			var kfJSON = {};
+			
+			kfJSON.duration = frame.duration;
+			kfJSON.index = index;
+			kfJSON.ref = element.libraryItem.name;
+			
+			var pos = helpers.getPosition(element);
+			kfJSON.loc = [roundBy(pos.x, 3), roundBy(pos.y, 3)];
+			
+			if(element.scaleX !== 1 || element.scaleY !== 1) {
+				kfJSON.scale = [roundBy(element.scaleX, 4), roundBy(element.scaleY, 4)];
+			}
+			
+			if(element.skewX !== 0 || element.skewY !== 0) {
+				kfJSON.skew = [roundBy(degreesToRadian(element.skewX), 4), roundBy(degreesToRadian(element.skewY), 4)];
+			}
+			
+			if(element.colorAlphaPercent !== 100) {
+				kfJSON.alpha = roundBy(element.colorAlphaPercent / 100, 4);
+			}
+			
+			if(!element.visible) {
+				kfJSON.visible = false;
+			}
+			
+			if(frame.name) {
+				kfJSON.label = frame.name;
+			}
+			
+			var pivot = this._getPivot(element);
+			kfJSON.pivot = [roundBy(pivot.x, 4), roundBy(pivot.y, 4)];
+
+			if(frame.tweenType !== "none") {
+				if(frame.isMotionObject()) {
+					kfJSON.motionEase = motionXMLToJSON(frame);
+					kfJSON.ease = 0;
+				}
+				else if(frame.hasCustomEase) {
+					kfJSON.customEase = customEaseToJSON(frame);
+					kfJSON.ease = 0;
+				}
+				else {
+					kfJSON.ease = -frame.tweenEasing / 100; //flump gets the acceleration which is the inverse of tweenEasing
+				}
+			}
+			else {
+				kfJSON.tweened = false;
+			}
+			
+			return kfJSON;
+		},
+		
+		_getPivot : function (element) {
+			var transformPoint = element.getTransformationPoint();
+			var frameOrigin = [0,0];
+			if(this.textureFramesBySymbol[element.libraryItem.name]) {
+				frameOrigin = this.textureFramesBySymbol[element.libraryItem.name].origin;
+			}
+			return {x : frameOrigin[0] + transformPoint.x, y : frameOrigin[1] + transformPoint.y};
+		},
+		
 		_writeKeyFrames : function (layerJSON, layer) {
 			var keyframes = getKeyframes(layer.frames);
 
 			keyframes.forEach(function (kf) {
-				var frame = kf.frame;
-				var kfJSON = {duration : frame.duration, index : kf.index};
-				
-				layerJSON.keyframes.push(kfJSON);
-				
-				if(!frame.elements.length) {
-					return;
-				}
-				
-				var element = frame.elements[0];
-			
-				if(!element.libraryItem) {
-					return;
-				}
-				
-				kfJSON.ref = element.libraryItem.name;
-				
-				var pos = helpers.getPosition(element);
-				kfJSON.loc = [roundBy(pos.x, 3), roundBy(pos.y, 3)];
-				
-				if(element.scaleX !== 1 || element.scaleY !== 1) {
-					kfJSON.scale = [roundBy(element.scaleX, 4), roundBy(element.scaleY, 4)];
-				}
-				
-				if(element.skewX !== 0 || element.skewY !== 0) {
-					kfJSON.skew = [roundBy(degreesToRadian(element.skewX), 4), roundBy(degreesToRadian(element.skewY), 4)];
-				}
-				
-				if(element.colorAlphaPercent !== 100) {
-					kfJSON.alpha = roundBy(element.colorAlphaPercent / 100, 4);
-				}
-				
-				if(frame.name) {
-					kfJSON.label = frame.name;
-				}
-				
-				var transformPoint = element.getTransformationPoint();
-				var frameOrigin = [0,0];
-				if(this.textureFramesBySymbol[element.libraryItem.name]) {
-					frameOrigin = this.textureFramesBySymbol[element.libraryItem.name].origin;
-				}
-				
-				kfJSON.pivot = [roundBy(frameOrigin[0] + transformPoint.x, 4), roundBy(frameOrigin[1] + transformPoint.y, 4)];
-
-				if(frame.tweenType !== "none") {
-					if(frame.isMotionObject()) {
-						kfJSON.motionEase = motionXMLToJSON(frame);
-						kfJSON.ease = 0;
-					}
-					else if(frame.hasCustomEase) {
-						kfJSON.customEase = customEaseToJSON(frame);
-                        kfJSON.ease = 0;
-					}
-					else {
-						kfJSON.ease = -frame.tweenEasing / 100; //flump gets the acceleration which is the inverse of tweenEasing
-					}
-				}
-				else {
-					kfJSON.tweened = false;
-				}
-
-				if(!element.visible) {
-					kfJSON.visible = false;
+				var kfJSON = this._createKeyFrameJSON(kf.frame, kf.index);
+				if(kfJSON) {
+					layerJSON.keyframes.push(kfJSON);
 				}
 			}, this);
 
@@ -268,138 +280,78 @@ var LibraryJSON = (function () {
 
 		_writeInterpolatedFrames : function (layerJSON, layer) {
 			var transform = {},
-				pivot = {},
-				flashKeyFrame = null,
-				kfJSON = {};
-
-			layer.frames.forEach(function (frame, index) {
-				if(!frame.startFrame) {
-					return; //empty frame!
-				}
-
-				if(frame.startFrame === index) { //keyframe
-					var element = frame.elements[0];
-
-					kfJSON.ref = element.libraryItem.name;
-					kfJSON.visible = element.visible;
-
-					var transformPoint = element.getTransformationPoint();
-					pivot.x = transformPoint.x;
-					pivot.y = transformPoint.y;
-					kfJSON.pivot = [roundBy(pivot.x, 4), roundBy(pivot.y, 4)];
-
-					flashKeyFrame = frame;
-				}
-
-				if(frame.tweenType === "none") {
-					return;
-				}
-
-				var matrix = flashKeyFrame.tweenObj.getGeometricTransform(index - flashKeyFrame.startFrame);
-				helpers.matrixToTransform(matrix, pivot, transform);
-
-				var colorTransform = flashKeyFrame.tweenObj.getColorTransform(index - flashKeyFrame.startFrame);
-
-				var fJSON = {
-					tweened : false,
-					index : index,
-					duration : 1,
-					pivot : kfJSON.pivot,
-					ref : kfJSON.ref
-				};
-
-				if(!kfJSON.visible) {
-					fJSON.visible = false;
-				}
-
-				fJSON.loc = [roundBy(transform.x, 3), roundBy(transform.y, 3)];
-
-				if(transform.scaleX !== 1 || transform.scaleY !== 1) {
-					fJSON.scale = [roundBy(transform.scaleX, 4), roundBy(transform.scaleY, 4)];
-				}
-
-				if(transform.skewX !== 0 || transform.skewY !== 0) {
-					fJSON.skew = [roundBy(transform.skewX, 4), roundBy(transform.skewY, 4)];
-				}
-
-				if(colorTransform.colorAlphaPercent !== 100) {
-					fJSON.alpha = roundBy(colorTransform.colorAlphaPercent / 100, 4);
-				}
-
-				layerJSON.keyframes.push(fJSON);
-			});
-		},
-		
-		_writeInterpolatedFrames2 : function (layerJSON, layer) {
-			var transform = {},
-				pivot = {},
-				flashKeyFrame = null,
-				kfJSON = {};
+				transformPoint = null,
+				absMatrix = null,
+				flashKeyFrame = null;
 				
 			if(!layerJSON.compactKeyframes) {
 				layerJSON.compactKeyframes = [];
 			}
 
 			layer.frames.forEach(function (frame, index) {
-				if(!frame.startFrame) {
+				
+				if(typeof frame.startFrame === "undefined") {
 					return; //empty frame!
 				}
-
+				
 				if(frame.startFrame === index) { //keyframe
-					var element = frame.elements[0];
-
-					kfJSON.index = index;
-					kfJSON.ref = element.libraryItem.name;
-					kfJSON.visible = element.visible;
-					kfJSON.compactIndex = layerJSON.compactKeyframes.length;
-
-					var transformPoint = element.getTransformationPoint();
-					pivot.x = transformPoint.x;
-					pivot.y = transformPoint.y;
-					kfJSON.pivot = [roundBy(pivot.x, 4), roundBy(pivot.y, 4)];
+					var kfJSON = this._createKeyFrameJSON(frame, index);
 					
-					layerJSON.keyframes.push(kfJSON);
-
+					if(kfJSON) {
+						transformPoint = frame.elements[0].getTransformationPoint();
+						absMatrix = frame.elements[0].matrix;
+						kfJSON.compactIndex = layerJSON.compactKeyframes.length;
+						layerJSON.keyframes.push(kfJSON);
+					}
+					
 					flashKeyFrame = frame;
+					
+					return;
 				}
-
+				
 				if(frame.tweenType === "none") {
 					return;
 				}
-
-				var matrix = flashKeyFrame.tweenObj.getGeometricTransform(index - flashKeyFrame.startFrame);
-				helpers.matrixToTransform(matrix, pivot, transform);
-
-				var colorTransform = flashKeyFrame.tweenObj.getColorTransform(index - flashKeyFrame.startFrame);
 				
-				var fJSON = [roundBy(transform.x, 3), roundBy(transform.y, 3)], elements = 1;
+				var offset = (index - flashKeyFrame.startFrame) - 1;
+				var matrix = flashKeyFrame.tweenObj.getGeometricTransform(offset); //matrix is relative :-(
+				//fl.trace((index - flashKeyFrame.startFrame) + ": " + matrix.tx + "#" + matrix.ty);
+				
+				matrix = helpers.matrixMultiply(matrix, absMatrix);
+				
+				helpers.matrixToTransform(matrix, transformPoint, transform);
+				
+				var elementLengthIndicator = layerJSON.compactKeyframes.length;
+				layerJSON.compactKeyframes.push(0);
+				
+				layerJSON.compactKeyframes.push( roundBy(transform.x, 3), roundBy(transform.y, 3) );
+				var elements = 1;
 				
 				if(transform.scaleX !== 1 || transform.scaleY !== 1) {
-					fJSON.push(roundBy(transform.scaleX, 3), roundBy(transform.scaleY, 4));
+					layerJSON.compactKeyframes.push(roundBy(transform.scaleX, 3), roundBy(transform.scaleY, 4));
 					elements |= 2;
 				}
 
 				if(transform.skewX !== 0 || transform.skewY !== 0) {
-					fJSON.push(roundBy(transform.skewX, 4), roundBy(transform.skewY, 4));
+					layerJSON.compactKeyframes.push(roundBy(transform.skewX, 4), roundBy(transform.skewY, 4));
 					elements |= 4;
 				}
 
-				if(colorTransform.colorAlphaPercent !== 100) {
-					fJSON.push(roundBy(colorTransform.colorAlphaPercent / 100, 4));
+				var alpha = flashKeyFrame.tweenObj.getColorTransform(offset).colorAlphaPercent;
+				if(alpha !== 100) {
+					layerJSON.compactKeyframes.push(roundBy(alpha / 100, 4));
 					elements |= 8;
 				}
 				
-				fJSON.unshift(elements);
-
-				layerJSON.compactKeyframes.push(fJSON);
-			});
+				layerJSON.compactKeyframes[elementLengthIndicator] = elements;
+			}, this);
 		},
 		
 		_writeLayer : function (movieJSON, layer, isFlipbookLayer) {
 			var layerJSON = {name : layer.name, keyframes : []};
 
-			if(layer.animationType === "motion object") {
-				this._writeInterpolatedFrames2(layerJSON, layer);
+			if(layer.animationType === "motion object") { //|| layer.layerType === "guided"
+				this._writeInterpolatedFrames(layerJSON, layer);
 			}
 			//if(layer.layerType === "guided") {
 				//for guided layers we will just write every keyframe to the json. Is there a better way?

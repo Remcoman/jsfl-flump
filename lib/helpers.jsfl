@@ -63,15 +63,34 @@ var helpers = (function () {
 		return false;
 	}
 
-	exports.matrixToTransform = function (matrix, pivot, outTransform) {
+	exports.matrixToTransform = function (matrix, transformPoint, outTransform) {
 		outTransform.skewY = Math.atan2(matrix.b, matrix.a);
 		outTransform.skewX = Math.atan2(-matrix.c, matrix.d);
 		outTransform.scaleX = Math.sqrt(matrix.a * matrix.a + matrix.b * matrix.b);
 		outTransform.scaleY = Math.sqrt(matrix.c * matrix.c + matrix.d * matrix.d);
-		outTransform.x = pivot.x * matrix.a + pivot.y * matrix.c + matrix.tx;
-		outTransform.y = pivot.x * matrix.b + pivot.y * matrix.d + matrix.ty;
-
+		outTransform.x = transformPoint.x * matrix.a + transformPoint.y * matrix.c + matrix.tx;
+		outTransform.y = transformPoint.x * matrix.b + transformPoint.y * matrix.d + matrix.ty;
+		
 		return outTransform;
+	}
+	
+	exports.matrixMultiply = function (m1,m2) {
+		var m3 = {a : 1, b : 0, c : 0, d : 1, tx : 0, ty : 0};
+		
+		var a1 = m1.a;
+		var b1 = m1.b;
+		var c1 = m1.c;
+		var d1 = m1.d;
+		if (m2.a != 1 || m2.b != 0 || m2.c != 0 || m2.d != 1) {
+			m3.a  = a1*m2.a+c1*m2.b;
+			m3.b  = b1*m2.a+d1*m2.b;
+			m3.c  = a1*m2.c+c1*m2.d;
+			m3.d  = b1*m2.c+d1*m2.d;
+		}
+		m3.tx = a1*m2.tx+c1*m2.ty+m1.tx;
+		m3.ty = b1*m2.tx+d1*m2.ty+m1.ty;
+		
+		return m3;
 	}
 
 	/**

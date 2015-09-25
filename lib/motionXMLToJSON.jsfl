@@ -26,31 +26,40 @@ var motionXMLToJSON = (function () {
         });
     }
 
-    var writeKeyFrames = function (keyFrameArray, keyframeXMLList) {
+	var absoluteTime = function (time, totalDuration) {
+		return time / totalDuration;
+	}
+
+    var writePoints = function (pointsArray, keyframeXMLList, totalDuration) {
         for each(var keyFrameXML in keyframeXMLList) {
-            var kfJSON = {
-                anchor : splitAttribute(keyFrameXML.@anchor),
-                prev : splitAttribute(keyFrameXML.@previous),
-                next : splitAttribute(keyFrameXML.@next),
-                timeValue : parseInt(keyFrameXML.@timevalue, 10)
-            };
+			var timeValue = parseInt(keyFrameXML.@timevalue, 10);
 
-			if(keyFrameXML.hasOwnProperty("@TimeMapIndex")) {
-				kfJSON.timeMap = parseInt(keyFrameXML.@TimeMapIndex, 10);
-			}
+			var prev = splitAttribute(keyFrameXML.@previous);
+			prev[0] = absoluteTime(prev[0] + timeValue, totalDuration);
+			pointsArray.push({x : prev[0], y : prev[1]});
 
-            keyFrameArray.push(kfJSON);
+			var next = splitAttribute(keyFrameXML.@next);
+			next[0] = absoluteTime(next[0] + timeValue, totalDuration);
+			pointsArray.push({x : next[0], y : next[1]});
         }
     }
 
-    var writeProperties = function (propertyArray, propertyXMLList) {
+    var writeProperties = function (propertyArray, propertyXMLList, totalDuration) {
         for each(var propertyXML in propertyXMLList) {
             var propName = idToProperty[propertyXML.@id.toString()];
-            if(propName) {
-                var propJSON = {name : propName, keyframes : []};
-                propertyArray.push(propJSON);
-                writeKeyFrames(propJSON.keyframes, propertyXML.Keyframe);
-            }
+            if(!propName) {
+				continue;
+			}
+
+			var propJSON = {name : propName, points : []};
+
+			if(propertyXML.hasOwnProperty("@TimeMapIndex")) {
+				propJSON.timeMap = parseInt(propertyXML.@TimeMapIndex, 10);
+			}
+
+			writePoints(propJSON.points, propertyXML.Keyframe, totalDuration);
+
+			propertyArray.push(propJSON);
         }
     }
 
@@ -58,14 +67,14 @@ var motionXMLToJSON = (function () {
 		var xml = new XML(frame.getMotionObjectXML());
 
         var json = {
-            timeScale : parseInt(xml.@TimeScale, 10),
             timeMaps : [],
-            offset : [parseFloat(xml.metadata.Settings.@xformPtXOffsetPct), parseFloat(xml.metadata.Settings.@xformPtYOffsetPct)],
-            properties : []
+			properties : []
         };
 
+		var duration = parseInt(xml.@duration, 10) - 1000;
+
         writeTimeMaps(json.timeMaps, xml.TimeMap);
-        writeProperties(json.properties, xml..Property);
+        writeProperties(json.properties, xml..Property, duration);
 
         return json;
     }
