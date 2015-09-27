@@ -353,7 +353,7 @@ var LibraryJSON = (function () {
 			if(layer.animationType === "motion object") { //|| layer.layerType === "guided"
 				this._writeInterpolatedFrames(layerJSON, layer);
 			}
-			//if(layer.layerType === "guided") {
+			//else if(layer.layerType === "guided") {
 				//for guided layers we will just write every keyframe to the json. Is there a better way?
 				//this._writeInterpolatedFrames(layerJSON, layer);
 			//}
