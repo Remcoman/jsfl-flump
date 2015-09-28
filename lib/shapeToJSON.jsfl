@@ -41,24 +41,28 @@ var shapeToJSON = (function () {
 	return function (el) {
 		var contour = el.contours[0], //TODO more contours?
 			iterator = createHalfEdgesIterator(contour),
-			json = [];
+			json = [], point,
+            halfEdge, edge;
 
 		do {
-			var halfEdge = iterator.current();
-			var edge = halfEdge.getEdge();
+			halfEdge = iterator.current();
+			edge = halfEdge.getEdge();
 
 			if(edge.isLine) { //just a simple line add the point
-				var vertex = halfEdge.getVertex();
-				addPoint(json, vertex.x, vertex.y);
+                point = halfEdge.getVertex();
+				addPoint(json, point.x, point.y);
 			}
 			else {
 				var points = el.getCubicSegmentPoints(edge.cubicSegmentIndex);
 
 				//first point is the "move to" or "line to" point
-				var p = points.shift();
-				addPoint(json, p.x, p.y);
+                point = points.shift();
+				addPoint(json, point.x, point.y);
 
+                //now add the cubic bezier
 				json.push({
+                    type : "C",
+
 					x1 : points[0].x,
 					y1 : points[0].y,
 
@@ -69,6 +73,7 @@ var shapeToJSON = (function () {
 					y : points[2].y
 				});
 
+                //we need to go to the other half edge (we don't want to stay on this edge
 				iterator.next();
 			}
 

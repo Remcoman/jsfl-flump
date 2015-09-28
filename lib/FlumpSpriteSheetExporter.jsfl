@@ -141,7 +141,7 @@ var FlumpSpriteSheetExporter = (function () {
 			tl.setSelectedLayers(1, true);
 			symbolBucket.flipbooks.forEach(function (symbol) {
 				if(symbol.timeline.layerCount > 1) { //we only want the first layer so we make a copy where only the first layer is available
-					symbol = this._createTempSymbol(tempSymbols, symbol.name + "__flipbook", symbol.name);
+					symbol = this._createTempSymbol(symbol.name + "__flipbook", symbol.name);
 					//delete all layers except the first
 					for(var i=1, c = symbol.timeline.layerCount;i < c;i++) {
 						symbol.timeline.deleteLayer(i);
@@ -153,7 +153,7 @@ var FlumpSpriteSheetExporter = (function () {
 		
 		_extractTextureOrigins : function () {
 			var tl = this.doc.getTimeline();
-			
+
 			tl.layers[0].frames[0].elements.forEach(function (element) {
 				this.spriteTextureOrigins[element.libraryItem.name] = helpers.getTextureOrigin(this.doc, element);
 			}, this);

@@ -3,6 +3,7 @@ include("helpers.jsfl");
 include("path.jsfl");
 include("customEaseToJSON.jsfl");
 include("motionXMLToJSON.jsfl");
+include("shapeToJSON.jsfl");
 
 var LibraryJSON = (function () {
 	
@@ -350,17 +351,22 @@ var LibraryJSON = (function () {
 		_writeLayer : function (movieJSON, layer, isFlipbookLayer) {
 			var layerJSON = {name : layer.name, keyframes : []};
 
-			if(layer.animationType === "motion object") { //|| layer.layerType === "guided"
+			if(layer.animationType === "motion object" || layer.layerType === "guided") {
 				this._writeInterpolatedFrames(layerJSON, layer);
 			}
-			//else if(layer.layerType === "guided") {
-				//for guided layers we will just write every keyframe to the json. Is there a better way?
-				//this._writeInterpolatedFrames(layerJSON, layer);
+            else if(!!isFlipbookLayer) {
+                layerJSON.flipbook  = true;
+                this._writeFlipbookFrames(layerJSON, movieJSON.id, layer);
+            }
+            //else if(layer.layerType === "guided") {
+			//	//first publish the shape
+             //   var shape = layer.parentLayer.frames[0].elements[0];
+             //   if(shape) {
+             //       layerJSON.guideIndex = movieJSON.guides.length;
+             //       movieJSON.guides.push( shapeToJSON(shape) );
+             //   }
+             //   this._writeKeyFrames(layerJSON, layer);
 			//}
-			else if(!!isFlipbookLayer) {
-				layerJSON.flipbook  = true;
-				this._writeFlipbookFrames(layerJSON, movieJSON.id, layer);
-			}
 			else {
 				this._writeKeyFrames(layerJSON, layer);
 			}
@@ -380,7 +386,7 @@ var LibraryJSON = (function () {
 		
 		_writeMovies : function () {
 			this.symbolBucket.movies.forEach(function (movieSymbol) {
-				var movieJSON = {layers : [], id : movieSymbol.name};
+				var movieJSON = {layers : [], guides : [], id : movieSymbol.name};
 				var hasFlipbook = this.symbolBucket.hasFlipbook(movieSymbol.name);
 				
 				var layers = movieSymbol.timeline.layers;

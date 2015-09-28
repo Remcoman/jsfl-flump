@@ -144,25 +144,24 @@ var helpers = (function () {
 	 */
 	exports.getTextureOrigin = function (doc, el) {
 		var x = el.x, y = el.y, originX = 0, originY = 0;
-		
-		//if(!hasStrokesOrFilters(el) {
-			//return {x : x - el.left, y : y - el.top};
-		//}
 
-		doc.selection = [el];
-		doc.clipCopy();
-		doc.clipPaste(true);
-		
-		try {
-			doc.convertSelectionToBitmap(); //convert! now we know the size of the element with the filters and strokes
-			var duplicate = doc.selection[0]; //this should be the bitmap
-			originX = x - duplicate.left;
-			originY = y - duplicate.top;
-		}
-		catch(e) {}
+        doc.selectNone();
+        doc.selection = [el]; //doc.selection adds to current selection!
 
-		//cleanup
-		doc.library.deleteItem(duplicate.libraryItem.name);
+        doc.clipCopy();
+        doc.clipPaste(true);
+
+        try {
+            doc.convertSelectionToBitmap(); //convert! now we know the size of the element with the filters and strokes
+            var duplicate = doc.selection[0]; //this should be the bitmap
+            originX = x - duplicate.left;
+            originY = y - duplicate.top;
+        }
+        catch(e) {
+            fl.trace(e.message);
+        }
+
+        doc.library.deleteItem(duplicate.libraryItem.name);
 		
 		return {x : originX, y : originY};
 	}
