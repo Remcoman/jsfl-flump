@@ -63,6 +63,13 @@ var helpers = (function () {
 		return false;
 	}
 
+    /**
+     *
+     * @param {Object} matrix
+     * @param {{x : number, y : number}} transformPoint
+     * @param {Object} outTransform
+     * @returns {Object}
+     */
 	exports.matrixToTransform = function (matrix, transformPoint, outTransform) {
 		outTransform.skewY = Math.atan2(matrix.b, matrix.a);
 		outTransform.skewX = Math.atan2(-matrix.c, matrix.d);
@@ -73,7 +80,13 @@ var helpers = (function () {
 		
 		return outTransform;
 	}
-	
+
+    /**
+     *
+     * @param {Object} m1
+     * @param {Object} m2
+     * @returns {Object}
+     */
 	exports.matrixMultiply = function (m1,m2) {
 		var m3 = {a : 1, b : 0, c : 0, d : 1, tx : 0, ty : 0};
 		

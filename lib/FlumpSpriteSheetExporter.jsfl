@@ -2,8 +2,27 @@
 include("helpers.jsfl");
 include("JSON.jsfl");
 
+
+/**
+ * This class writes all the collected sprites, flipbooks and movies from the symbolbucket
+ * to one or multiple spritesheets. 
+ *
+ * It uses the builtin SpriteSheetExporter from Flash to create the spritesheets with a json metadata file.
+ * It then processes the metadata file and removes it (we keep the image file).
+ *
+ * The result will be:
+ *  - one or more image files (named atlas0.png, atlas1.png etc)
+ *  - an frames array which contains all the metadata (rect, origin etc)
+ */
 var FlumpSpriteSheetExporter = (function () {
-	
+
+    /**
+     *
+     * @param {string} outputDir
+     * @param {Array.<SymbolInstance>} sprites
+     * @param {Array.<SymbolInstance>} flipbooks
+     * @constructor
+     */
 	var SpriteSheetWriter = function (outputDir, sprites, flipbooks) {
 		this.outputDir = outputDir;
 		this.sprites = sprites;
@@ -22,7 +41,7 @@ var FlumpSpriteSheetExporter = (function () {
 			this.exporter.allowRotate = false;
 			this.exporter.allowTrimming = true;
 			this.exporter.algorithm = "maxRects";
-			this.exporter.borderPadding = 1;
+			this.exporter.borderPadding = this.exporter.shapePadding = 2;
 			this.exporter.maxSheetHeight = this.exporter.maxSheetWidth = 2048;
 			
 			//write sprites until there is no more space
@@ -126,7 +145,8 @@ var FlumpSpriteSheetExporter = (function () {
 			//create a __temp movieclip
 			this._createTempSymbol("__temp");
 			this.doc.library.editItem("__temp");
-			
+
+            //2 layers. layer 1 is for the sprites, layer 2 is for flipbooks
 			var tl = this.doc.getTimeline();
 			tl.layers[0].name = "sprites";
 			tl.addNewLayer("flipbooks", "normal", false);
@@ -203,7 +223,7 @@ var FlumpSpriteSheetExporter = (function () {
 					
 					var frame = {
 						img : metadata.meta.image,
-						rect : [frameRect.x, frameRect.y, frameRect.w, frameRect.h],
+						rect : [frameRect.x, frameRect.y, frameRect.w, frameRect.h]
 					}
 					
 					//flash puts 0000 after name. Is this the frame number?

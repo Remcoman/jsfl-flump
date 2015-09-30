@@ -1,7 +1,5 @@
 /**
- * User: remcokrams
- * Date: 27-09-15
- * Time: 22:27
+ * Converts shapes to json
  */
 var shapeToJSON = (function () {
 

@@ -5,6 +5,9 @@ include("customEaseToJSON.jsfl");
 include("motionXMLToJSON.jsfl");
 include("shapeToJSON.jsfl");
 
+/**
+ * This class writes the timeline and the frames collected from the FlumpSpriteSheetExporter to a library.json file.
+ */
 var LibraryJSON = (function () {
 	
 	var degreesToRadian = function (angle) {
@@ -289,6 +292,7 @@ var LibraryJSON = (function () {
 				layerJSON.compactKeyframes = [];
 			}
 
+            //TODO maybe we can sample for each second frame instead of each frame?
 			layer.frames.forEach(function (frame, index) {
 				
 				if(typeof frame.startFrame === "undefined") {
@@ -315,10 +319,8 @@ var LibraryJSON = (function () {
 				}
 				
 				var offset = (index - flashKeyFrame.startFrame) - 1;
-				var matrix = flashKeyFrame.tweenObj.getGeometricTransform(offset); //matrix is relative :-(
-				//fl.trace((index - flashKeyFrame.startFrame) + ": " + matrix.tx + "#" + matrix.ty);
-				
-				matrix = helpers.matrixMultiply(matrix, absMatrix);
+
+				var matrix = helpers.matrixMultiply(flashKeyFrame.tweenObj.getGeometricTransform(offset), absMatrix);
 				
 				helpers.matrixToTransform(matrix, transformPoint, transform);
 				
@@ -329,12 +331,12 @@ var LibraryJSON = (function () {
 				var elements = 1;
 				
 				if(transform.scaleX !== 1 || transform.scaleY !== 1) {
-					layerJSON.compactKeyframes.push(roundBy(transform.scaleX, 3), roundBy(transform.scaleY, 4));
+					layerJSON.compactKeyframes.push( roundBy(transform.scaleX, 3), roundBy(transform.scaleY, 4) );
 					elements |= 2;
 				}
 
 				if(transform.skewX !== 0 || transform.skewY !== 0) {
-					layerJSON.compactKeyframes.push(roundBy(transform.skewX, 4), roundBy(transform.skewY, 4));
+					layerJSON.compactKeyframes.push( roundBy(transform.skewX, 4), roundBy(transform.skewY, 4) );
 					elements |= 4;
 				}
 
@@ -377,7 +379,7 @@ var LibraryJSON = (function () {
 		_writeTextureGroups : function () {
 			var textureGroupJSON = {scaleFactor : 1, atlases : []};
 
-			for(var img in this.textureFramesByImg) {
+			for(var img in this.textureFramesByImg) if(this.textureFramesByImg.hasOwnProperty(img)) {
 				this._writeAtlas(textureGroupJSON, img, this.textureFramesByImg[img]);
 			}
 			
