@@ -6,6 +6,7 @@ var included = {}, include = function (file) {
 	try {fl.runScript(uri);} catch(e) { throw "Could not load " + uri + " from " + fl.scriptURI;}
 }
 
+include("lib/JSON.jsfl");
 include("lib/LibraryJSON.jsfl");
 include("lib/SymbolBucket.jsfl");
 include("lib/path.jsfl");
@@ -13,6 +14,18 @@ include("lib/FlumpSpriteSheetExporter.jsfl");
 
 // Clear the output panel 
 fl.outputPanel.clear();
+
+var readFlumpifyConfig = function (doc) {
+    var configPath = path.dirname(doc.pathURI) + "/.flumpify";
+    var configContents = {};
+    
+    if(FLfile.exists(configPath)) {
+        var contents = FLfile.read(configPath);
+        configContents = JSON.decode(contents);
+    }
+    
+    return configContents;
+}
 
 var processDocument = function (doc) {
 	//make sure we have nothing selected
@@ -22,41 +35,51 @@ var processDocument = function (doc) {
 	//name of fla without the extension
 	var outputName = path.basename(doc.name, ".fla");
 
-	//ask for the output directory
-	var initialDir = doc.path ? path.dirname(doc.path) : null;
-	var baseDir = fl.browseForFolderURL("Select the destination folder where the output folder '" + outputName + "' is created", initialDir );
+    //attempt to read flumpify config
+    var config = readFlumpifyConfig(doc);
 
-	if(baseDir) {
-		var outputDir = baseDir + "/" + outputName;
-		
-		//create the output folder
-		if(!FLfile.exists(outputDir)) {
-			fl.trace("creating output folder '" + outputDir + "'");
-			FLfile.createFolder(outputDir);
-		}
-
-		//collect the symbols (sprites, movieclips) and group them by sprites, movieclips and flipbooks
-		fl.trace("collecting symbols");
-		var symbolBucket = SymbolBucket.fromLibrary(doc.library);
-
-		//check if movieclips and/or flipbooks where found
-		if(symbolBucket.isValid()) {
-			//lets write the spritesheets
-			fl.trace("exporting spritesheet");
-			var exporter = new FlumpSpriteSheetExporter(doc);
-			exporter.export(symbolBucket, outputDir);
-
-			var lib = new LibraryJSON(doc);
-			lib.write(symbolBucket, exporter.frames);
-
-			FLfile.write(outputDir + "/library.json", lib.toJSON());
-			
-			fl.trace("done!");
-		}
-		else {
-			fl.trace("No assets could be exported");
-		}
+    var baseDir = config.baseDir;
+    
+    if(!baseDir) { //ask for the output directory if undefined
+        var initialDir = doc.path ? path.dirname(doc.path) : null;
+        baseDir = fl.browseForFolderURL("Select the destination folder where the output folder '" + outputName + "' is created", initialDir );
+        if(!baseDir) { //canceled
+            return;
+        }    
+    }
+	else {
+		baseDir = FLfile.platformPathToURI(path.resolve(path.dirname(doc.path), baseDir));
 	}
+    
+    var outputDir = baseDir + "/" + outputName;
+    
+    //create the output folder
+    if(!FLfile.exists(outputDir)) {
+        fl.trace("creating output folder '" + outputDir + "'");
+        FLfile.createFolder(outputDir);
+    }
+
+    //collect the symbols (sprites, movieclips) and group them by sprites, movieclips and flipbooks
+    fl.trace("collecting symbols");
+    var symbolBucket = SymbolBucket.fromLibrary(doc.library);
+
+    //check if movieclips and/or flipbooks where found
+    if(symbolBucket.isValid()) {
+        //lets write the spritesheets
+        fl.trace("exporting spritesheet");
+        var exporter = new FlumpSpriteSheetExporter(doc);
+        exporter.export(symbolBucket, outputDir);
+
+        var lib = new LibraryJSON(doc);
+        lib.write(symbolBucket, exporter.frames);
+
+        FLfile.write(outputDir + "/library.json", lib.toJSON());
+        
+        fl.trace("done!");
+    }
+    else {
+        fl.trace("No assets could be exported");
+    }
 }
 
 var doc = fl.getDocumentDOM();
