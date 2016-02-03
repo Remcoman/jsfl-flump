@@ -3,9 +3,11 @@ include("path.jsfl");
 var flumpifyConfig = (function () {
     
     var baseConfig = {
-        baseScale : 1,
+        baseScale    : 1,
         scaleFactors : [1],
-        baseDir : null
+        baseDir      : null,
+        maxSize      : 2048,
+        padding      : 2
     }
     
     var extend = function (obj1, obj2) {

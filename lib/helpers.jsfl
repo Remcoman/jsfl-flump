@@ -2,67 +2,6 @@
 var helpers = (function () {
 	var exports = {};
 	
-	var getFilterRadius = function (el, origin) {
-		if(el.elementType !== "instance") { //this element can't have filters
-			return origin;
-		}
-		
-		if(el.filters) {
-			el.filters.forEach(function (filter) {
-				if(!filter.enabled) {
-					return;
-				}
-
-				switch(filter.name) {
-					case "dropShadowFilter" :
-						if(filter.inner) {
-							return;
-						}
-						var angleRad = filter.angle * (Math.PI/180);
-						var xOffset = Math.cos(angleRad) * filter.distance;
-						var yOffset = Math.sin(angleRad) * filter.distance;
-						origin.x = Math.max(origin.x, filter.blurX - xOffset); //for blurX = 60, origin.x = 60
-						origin.y = Math.max(origin.y, filter.blurY - yOffset);
-						break;
-					
-					case "glowFilter" :
-						//TODO
-						break;
-				}
-			});
-		}
-		
-		if(el.libraryItem.symbolType === "movie clip") {
-			el.libraryItem.timeline.layers.forEach(function (layer) {
-				layer.frames[0].elements.forEach(function (childElement) {
-					getFilterRadius(childElement, origin);
-				});
-			});
-		}
-		
-		return origin;
-	}
-	
-	var hasStrokesOrFilters = function (el) {
-		if(el.filters && el.filters.length) {
-			return true;
-		}
-		
-		if(el.elementType === "shape") {
-			return el.edges.some(function (edge) {
-				return edge.stroke.thickness > 0;
-			});
-		}
-		
-		if(el.libraryItem && el.libraryItem.timeline) {
-			return el.libraryItem.timeline.layers.some(function (layer) {
-				return layer.frames[0].elements.some(hasStrokesOrFilters);
-			});
-		}
-		
-		return false;
-	}
-
     /**
      *
      * @param {Object} matrix

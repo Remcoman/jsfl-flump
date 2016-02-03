@@ -1,5 +1,19 @@
 ﻿
 var path = {
+    pixelRatioSuffix : function (pixelRatio) {
+        return pixelRatio > 1 ? "@" + pixelRatio + "x" : "";
+    },
+    
+    resolvePixelRatio : function (path) {
+        var match = path.match(/^(.+?)@([0-9])x\.fla$/);
+        if(match) {
+            return {path : match[1] + ".fla", pixelRatio : parseInt(match[2], 10)}    
+        }
+        else {
+            return {path : path, pixelRatio : 1};
+        }
+    },
+    
 	basename : function (path, ext) {
 		var name = path.split("/").pop();
 		if(ext && this.extname(name) === ext) {
@@ -27,17 +41,13 @@ var path = {
     
         path = cwd + "/" + path;
         
-        fl.trace(path);
-        
         var absolute = path.match(/^([\w ]+[:\|]|\/|{\w+})/);
         if(absolute) {
             path = path.substr(absolute[0].length);
         }
         
-        fl.trace(absolute);
-    
-        var parts = path.split(/[\/\\]/g);
-        var result = [];
+        var parts = path.split(/[\/\\]/g), 
+            result = [];
 
         for (var x = 0, partsLength = parts.length; x < partsLength; x++) {
             if (parts[x] === "..") {

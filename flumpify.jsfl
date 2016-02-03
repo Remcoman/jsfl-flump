@@ -11,47 +11,38 @@ include("lib/LibraryJSON.jsfl");
 include("lib/SymbolBucket.jsfl");
 include("lib/path.jsfl");
 include("lib/FlumpSpriteSheetExporter.jsfl");
+include("lib/flumpifyConfig.jsfl");
 
 // Clear the output panel 
 fl.outputPanel.clear();
-
-var readFlumpifyConfig = function (doc) {
-    var configPath = path.dirname(doc.pathURI) + "/.flumpify";
-    var configContents = {};
-    
-    if(FLfile.exists(configPath)) {
-        var contents = FLfile.read(configPath);
-        configContents = JSON.decode(contents);
-    }
-    
-    return configContents;
-}
 
 var processDocument = function (doc) {
 	//make sure we have nothing selected
 	doc.selectNone();
 	doc.exitEditMode();
 
+    //get the name without pixel ratio information & the pixel ratio
+    var docPixelRatioName = path.resolvePixelRatio(doc.name);
+
 	//name of fla without the extension
-	var outputName = path.basename(doc.name, ".fla");
+	var outputName = path.basename(docPixelRatioName.path, ".fla");
 
     //attempt to read flumpify config
-    var config = readFlumpifyConfig(doc);
-
-    var baseDir = config.baseDir;
-    
-    if(!baseDir) { //ask for the output directory if undefined
+    var config = flumpifyConfig.read(doc);
+	
+    //ask for the output directory if undefined
+    if(!config.baseDir) { 
         var initialDir = doc.path ? path.dirname(doc.path) : null;
-        baseDir = fl.browseForFolderURL("Select the destination folder where the output folder '" + outputName + "' is created", initialDir );
-        if(!baseDir) { //canceled
+        config.baseDir = fl.browseForFolderURL("Select the destination folder where the output folder '" + outputName + "' is created", initialDir );
+        if(!config.baseDir) { //canceled
             return;
         }    
     }
 	else {
-		baseDir = FLfile.platformPathToURI(path.resolve(path.dirname(doc.path), baseDir));
+		config.baseDir = FLfile.platformPathToURI(path.resolve(path.dirname(doc.path), config.baseDir));
 	}
     
-    var outputDir = baseDir + "/" + outputName;
+    var outputDir = config.baseDir + "/" + outputName;
     
     //create the output folder
     if(!FLfile.exists(outputDir)) {
@@ -60,18 +51,25 @@ var processDocument = function (doc) {
     }
 
     //collect the symbols (sprites, movieclips) and group them by sprites, movieclips and flipbooks
-    fl.trace("collecting symbols");
+    fl.trace("collecting symbols...");
     var symbolBucket = SymbolBucket.fromLibrary(doc.library);
 
     //check if movieclips and/or flipbooks where found
     if(symbolBucket.isValid()) {
         //lets write the spritesheets
-        fl.trace("exporting spritesheet");
+        
         var exporter = new FlumpSpriteSheetExporter(doc);
-        exporter.export(symbolBucket, outputDir);
+        
+        var frames = config.scaleFactors.map(function (factor) {
+            fl.trace("exporting spritesheet for scaleFactor: " + factor);
+            
+            var frames = exporter.export(symbolBucket, outputDir, factor*config.baseScale, path.pixelRatioSuffix(factor));
+            return {scaleFactor : factor, frames : frames};
+        });
 
+        //library json is always at original size 
         var lib = new LibraryJSON(doc);
-        lib.write(symbolBucket, exporter.frames);
+        lib.write(frames, symbolBucket, config.baseScale);
 
         FLfile.write(outputDir + "/library.json", lib.toJSON());
         

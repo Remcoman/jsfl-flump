@@ -18,16 +18,19 @@ var FlumpSpriteSheetExporter = (function () {
 
     /**
      *
-     * @param {string} outputDir
-     * @param {Array.<SymbolInstance>} sprites
-     * @param {Array.<SymbolInstance>} flipbooks
+     * @param {object} options
      * @constructor
      */
-	var SpriteSheetWriter = function (outputDir, sprites, flipbooks) {
-		this.outputDir = outputDir;
-		this.sprites = sprites;
-		this.flipbooks = flipbooks;
-		this.metadataPaths = [];
+	var SpriteSheetWriter = function (options) {
+        
+		this.outputDir = options.outputDir;
+		this.sprites = options.sprites;
+		this.flipbooks = options.flipbooks;
+		this.fileNameSuffix = options.fileNameSuffix;
+        this.maxSize = options.maxSize;
+        this.padding = options.padding;
+        
+        this.metadataPaths = [];
 		this.exporter = new SpriteSheetExporter();
 	}
 	
@@ -41,14 +44,14 @@ var FlumpSpriteSheetExporter = (function () {
 			this.exporter.allowRotate = false;
 			this.exporter.allowTrimming = true;
 			this.exporter.algorithm = "maxRects";
-			this.exporter.borderPadding = this.exporter.shapePadding = 2;
-			this.exporter.maxSheetHeight = this.exporter.maxSheetWidth = 2048;
+			this.exporter.borderPadding = this.exporter.shapePadding = this.padding;
+			this.exporter.maxSheetHeight = this.exporter.maxSheetWidth = this.maxSize;
 			
 			//write sprites until there is no more space
 			while(this.sprites.length) {
 				var element = this.sprites.shift();
 				
-				fl.trace("adding sprite '" + element.name + "' to spritesheet");
+				fl.trace("adding sprite '" + element.name.slice(0, -1) + "' to spritesheet");
 				
 				this.exporter.addSymbol(element, element.name);
 
@@ -64,7 +67,7 @@ var FlumpSpriteSheetExporter = (function () {
 			while(this.flipbooks.length) {
 				var element = this.flipbooks.shift();
 				
-				fl.trace("adding flipbook '" + element.name + "' to spritesheet");
+				fl.trace("adding flipbook '" + element.name.slice(0, -1) + "' to spritesheet");
 				this.exporter.addSymbol(element, element.name, 0, element.libraryItem.timeline.frameCount);
 
 				if(this.exporter.overflowed) {
@@ -75,7 +78,7 @@ var FlumpSpriteSheetExporter = (function () {
 				}
 			}
 			
-			var spriteSheetPath = this.outputDir + "/atlas" + this.metadataPaths.length;
+			var spriteSheetPath = this.outputDir + "/atlas" + this.metadataPaths.length + this.fileNameSuffix;
 			this.metadataPaths.push(spriteSheetPath + ".json");
 			
 			fl.trace("writing '" + spriteSheetPath + "'");
@@ -92,9 +95,10 @@ var FlumpSpriteSheetExporter = (function () {
 	}
 	
 	
-	var exports = function (doc) {
+	var exports = function (doc, config) {
 		this.tempSymbols = [];
 		this.doc = doc;
+        this.config = config;
 		this.spriteTextureOrigins = {};
 		this.flipbookTextureOrigins = {};
 	}
@@ -122,22 +126,23 @@ var FlumpSpriteSheetExporter = (function () {
 			this.tempSymbols.length = 0;
 		},
 		
-		_addItemToDoc : function (symbolName) {
+		_addItemToDoc : function (symbolName, scale) {
 			this.doc.library.addItemToDocument({x : 0, y : 0}, symbolName);
 			var item = this.doc.selection[0];
+            item.scaleX = item.scaleY = scale;
 			item.name = this._symbolNameToInstanceName(symbolName) + "_"; //we append a _ because spritesheet exporter always adds 0000 after name
 			return item;
 		},
 		
 		_symbolNameToInstanceName : function (symbolName) {
-			return symbolName.split("/").join("$"); 
+			return symbolName.split("/").join("$");
 		},
 		
 		_instanceNameToSymbolName : function (instanceName) {
-			return instanceName.split("$").join("/"); 
+			return instanceName.split("$").join("/");
 		},
 		
-		_prepareTemporaryTimeline : function (symbolBucket) {
+		_prepareTemporaryTimeline : function (symbolBucket, scale) {
 			if(this.doc.library.itemExists("__temp")) {
 				this.doc.library.deleteItem("__temp");
 			}
@@ -154,7 +159,7 @@ var FlumpSpriteSheetExporter = (function () {
 			//add all sprites to layer 0
 			tl.setSelectedLayers(0, true);
 			symbolBucket.sprites.forEach(function (symbol) {
-				this._addItemToDoc(symbol.name);
+				this._addItemToDoc(symbol.name, scale);
 			}, this);
 			
 			//add all flipbooks to layer 1
@@ -167,7 +172,7 @@ var FlumpSpriteSheetExporter = (function () {
 						symbol.timeline.deleteLayer(i);
 					}
 				}
-				this._addItemToDoc(symbol.name);
+				this._addItemToDoc(symbol.name, scale);
 			}, this);
 		},
 		
@@ -182,16 +187,19 @@ var FlumpSpriteSheetExporter = (function () {
 				this.flipbookTextureOrigins[element.libraryItem.name] = helpers.getTextureOriginInner(this.doc, element);
 			}, this);
 		},
-		
-		_writeSpriteSheets : function (outputDir) {
+        
+		_writeSpriteSheets : function (outputDir, spriteSheetSuffix) {
 			var tl = this.doc.getTimeline();
 			
 			//add all the sprites and flipbooks to the spritesheet
-			var writer = new SpriteSheetWriter(
-				outputDir, 
-				tl.layers[0].frames[0].elements,
-				tl.layers[1].frames[0].elements
-			);
+			var writer = new SpriteSheetWriter({
+                outputDir      : outputDir,
+                sprites        : tl.layers[0].frames[0].elements,
+                flipbooks      : tl.layers[1].frames[0].elements,
+                fileNameSuffix : spriteSheetSuffix,
+                maxSize        : this.config.maxSize,
+                padding        : this.config.padding
+            });
 			
 			writer.write();
 			
@@ -214,7 +222,6 @@ var FlumpSpriteSheetExporter = (function () {
 				var metadata = JSON.decode( FLfile.read(path) );
 				
 				for(var name in metadata.frames) {
-
 					var regexpMatch  = name.match(frameNumberRegex),
 						symbolName   = this._instanceNameToSymbolName(regexpMatch[1]),
 						frameNum     = parseInt(regexpMatch[2], 10),
@@ -247,12 +254,14 @@ var FlumpSpriteSheetExporter = (function () {
 			return frames;
 		},
 
-		export : function (symbolBucket, outputDir) {
-			this._prepareTemporaryTimeline(symbolBucket);
+		export : function (symbolBucket, outputDir, scale, spriteSheetSuffix) {
+			this._prepareTemporaryTimeline(symbolBucket, scale);
 			this._extractTextureOrigins();
-			var metadataPaths = this._writeSpriteSheets(outputDir);
-			this.frames = this._readFrames(symbolBucket, metadataPaths);
+			var metadataPaths = this._writeSpriteSheets(outputDir, spriteSheetSuffix);
+			var frames = this._readFrames(symbolBucket, metadataPaths);
 			this._cleanup(metadataPaths);
+            
+            return frames;
 		}
 	}
 	
