@@ -51,12 +51,9 @@ The compact index points to an index in a seperate "compactKeyframes" array (whi
 - alpha if alpha is available
 
 # Retina support
-You can enable retina support by appending "@2x" to the fla filename (or changing the pixelRatio in the flumpify.json). The next step is to make sure that all assets in the fla are 2x the required size! 
-Exporting a retina fla will result in the following actions:
-- a bear directory will be created 
-- a library.json will be created in the bear directory
-- the image in the library.json will point to "bear@x.png". A frontend framework will have to parse this name and convert it to "bear@2x.png" or "bear.png" depending on the pixel ration of the device.
-- 2 images will be created in the bear folder: "bear@2x.png" and "bear.png"
+You can enable retina support by adding baseScale and scaleFactor options to the flumpify.json file.
+baseScale is determined by which scale you have used to author your assets. If you have authored the fla at twice its destined size then the baseScale should be 0.5.
+scaleFactors determine which sizes are to be exported relative to the baseScale. The final sizes are determined by multiplying the baseScale by the scaleFactor
 
 # flumpify.json
 You can create a flumpify json at the same location as the fla. This json file has the following structure:
