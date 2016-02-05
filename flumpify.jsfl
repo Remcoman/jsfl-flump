@@ -58,7 +58,7 @@ var processDocument = function (doc) {
     if(symbolBucket.isValid()) {
         //lets write the spritesheets
         
-        var exporter = new FlumpSpriteSheetExporter(doc);
+        var exporter = new FlumpSpriteSheetExporter(doc, config);
         
         var frames = config.scaleFactors.map(function (factor) {
             fl.trace("exporting spritesheet for scaleFactor: " + factor);

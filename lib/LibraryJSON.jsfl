@@ -33,9 +33,10 @@ var LibraryJSON = (function () {
 		return (n > 0 ? 1 : (n < 0 ? -1 : 0));
 	}
 	
-	var exports	= function (doc) {		
+	var exports	= function (doc, config) {		
 		this.movies = [];
 		this.textureGroups = [];
+        this.config = config; //not used
 		this.frameRate = doc.frameRate;
         this.baseScaleTextureFramesBySymbol = null;
         this.baseScale = 1;
@@ -105,6 +106,10 @@ var LibraryJSON = (function () {
 					tweened : false,
 					pivot : [roundBy(origin[0], 4), roundBy(origin[1], 4)]
 				};
+                
+                if(frame.name) {
+				    kfJSON.label = frame.name;
+			    }
 				
 				layerJSON.keyframes.push(kfJSON);
 			}, this);
