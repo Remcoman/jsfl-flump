@@ -19,6 +19,10 @@
 		symbolIsFlipbook : function (symbol) {
 			return symbol.timeline.layerCount > 0 && symbol.timeline.layers[0].name === "flipbook";
 		},
+        
+        has : function (name) {
+            return this.hasMovie(name) || this.hasSprite(name) || this.hasFlipbook(name); 
+        },
 
 		hasMovie : function (name) {
 			return name in this._moviesByName;

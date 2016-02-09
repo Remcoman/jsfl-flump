@@ -440,7 +440,7 @@ var LibraryJSON = (function () {
 				
 				var layers = movieSymbol.timeline.layers;
 				for(var i=layers.length-1;i >= 0;i--) {
-					if(this._isValidLayer(layers[i])) {
+					if(this._isValidLayer(layers[i], hasFlipbook)) {
 						this._writeLayer(movieJSON, layers[i], hasFlipbook && i === 0);
 					}
 				}
@@ -471,8 +471,23 @@ var LibraryJSON = (function () {
                 this.textureGroups.push(textureGroupJSON);
             }, this);
         },
+        
+        _isValidElement : function (element) {
+            return element.instanceType === "symbol" && this.symbolBucket.has(element.libraryItem.name); 
+        },
 		
-		_isValidLayer : function (layer) {
+		_isValidLayer : function (layer, hasFlipbook) {
+            if(!hasFlipbook) {
+                var everyKeyframeHasElement = getKeyframes(layer.frames).every(function (keyframe) {
+                    return this._isValidElement(keyframe.frame.elements[0]);
+                }, this);
+                
+                if(!everyKeyframeHasElement) {
+                    fl.trace("Layer " + layer.name + " contains invalid elements!");
+                    return false;
+                }
+            }
+            
 			return layer.layerType === "normal" || layer.layerType === "masked" || layer.layerType === "guided";
 		},
         

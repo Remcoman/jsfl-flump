@@ -58,7 +58,7 @@ var FlumpSpriteSheetExporter = (function () {
 				if(this.exporter.overflowed) {
 					fl.trace("spritesheet overflowed!");
 					this.sprites.unshift(element);
-					this.exporter.removeSymbol(element.name);
+					this.exporter.removeSymbol(element);
 					break;
 				}
 			}
@@ -73,7 +73,7 @@ var FlumpSpriteSheetExporter = (function () {
 				if(this.exporter.overflowed) {
 					fl.trace("spritesheet overflowed!");
 					this.flipbooks.unshift(element);
-					this.exporter.removeSymbol(element.name);
+					this.exporter.removeSymbol(element);
 					break;
 				}
 			}
