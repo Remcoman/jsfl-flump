@@ -28,15 +28,18 @@ var FlumpSpriteSheetExporter = (function () {
 		this.flipbooks = options.flipbooks;
 		this.fileNameSuffix = options.fileNameSuffix;
         this.maxSize = options.maxSize;
-        this.padding = options.padding;
+        this.shapePadding = options.shapePadding;
+        this.borderPadding = options.borderPadding;
         
         this.metadataPaths = [];
 		this.exporter = new SpriteSheetExporter();
+        this.tooLargeSprites = [];
+        this.tooLargeFlipbooks = [];
 	}
 	
 	SpriteSheetWriter.prototype = {
-		
-		_writeSingle : function () {
+        
+		_writeSingle : function (sprites, flipbooks) {
 			this.exporter.beginExport();
 			
 			//reset all the values
@@ -44,12 +47,17 @@ var FlumpSpriteSheetExporter = (function () {
 			this.exporter.allowRotate = false;
 			this.exporter.allowTrimming = true;
 			this.exporter.algorithm = "maxRects";
-			this.exporter.borderPadding = this.exporter.shapePadding = this.padding;
+			this.exporter.borderPadding = this.borderPadding;
+            this.exporter.shapePadding = this.shapePadding;
 			this.exporter.maxSheetHeight = this.exporter.maxSheetWidth = this.maxSize;
+            
+            var firstItem = true;
 			
+            //TODO if the first item does not fit into spritesheet then we need to enlarge the spritesheet
+            
 			//write sprites until there is no more space
-			while(this.sprites.length) {
-				var element = this.sprites.shift();
+			while(sprites.length) {
+				var element = sprites.shift();
 				
 				fl.trace("adding sprite '" + element.name.slice(0, -1) + "' to spritesheet");
 				
@@ -57,22 +65,37 @@ var FlumpSpriteSheetExporter = (function () {
 
 				if(this.exporter.overflowed) {
 					fl.trace("spritesheet overflowed!");
-					this.sprites.unshift(element);
+                    if(firstItem) {
+                        fl.trace("sprite was first item in spritesheet so maxSize is probably too small");
+                        this.tooLargeSprites.push(element);
+                    }
+                    else {
+                        sprites.push(element);
+                        firstItem = false;
+                    }
+					
 					this.exporter.removeSymbol(element);
 					break;
 				}
 			}
 			
 			//write flipbooks until there is no more space
-			while(this.flipbooks.length) {
-				var element = this.flipbooks.shift();
+			while(flipbooks.length) {
+				var element = flipbooks.shift();
 				
 				fl.trace("adding flipbook '" + element.name.slice(0, -1) + "' to spritesheet");
 				this.exporter.addSymbol(element, element.name, 0, element.libraryItem.timeline.frameCount);
 
 				if(this.exporter.overflowed) {
 					fl.trace("spritesheet overflowed!");
-					this.flipbooks.unshift(element);
+                    if(firstItem) {
+                        fl.trace("flipbook was first item in spritesheet so maxSize is probably too small");
+                        this.tooLargeFlipbooks.push(element);
+                    }
+                    else {
+					   flipbooks.push(element);
+                       firstItem = false;
+                    }
 					this.exporter.removeSymbol(element);
 					break;
 				}
@@ -85,11 +108,20 @@ var FlumpSpriteSheetExporter = (function () {
 			
 			this.exporter.exportSpriteSheet(spriteSheetPath, {format:"png", bitDepth:32, backgroundColor:"#00000000"}, true);
 		},
+        
+        nextPowerOfTwo : function (x) {
+            return Math.pow(2,  Math.ceil( Math.log( x ) / Math.log( 2 ) ) );
+        },
 	
 		write : function () {
 			var i = 0;
 			while(i++ < 10 && (this.sprites.length || this.flipbooks.length)) {
-				this._writeSingle();
+				this._writeSingle(this.sprites, this.flipbooks);
+			}
+            i = 0;
+            while(i++ < 10 && (this.tooLargeSprites.length || this.tooLargeFlipbooks.length)) {
+                this.maxSize = this.nextPowerOfTwo(this.maxSize);
+				this._writeSingle(this.tooLargeSprites, this.tooLargeFlipbooks);
 			}
 		}
 	}
@@ -198,7 +230,8 @@ var FlumpSpriteSheetExporter = (function () {
                 flipbooks      : tl.layers[1].frames[0].elements,
                 fileNameSuffix : spriteSheetSuffix,
                 maxSize        : this.config.maxSize,
-                padding        : this.config.padding
+                shapePadding   : this.config.shapePadding,
+                borderPadding  : this.config.borderPadding
             });
 			
 			writer.write();

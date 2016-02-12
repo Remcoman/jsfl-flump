@@ -7,7 +7,8 @@ var flumpifyConfig = (function () {
         scaleFactors : [1],
         baseDir      : null,
         maxSize      : 2048,
-        padding      : 2
+        shapePadding : 2,
+        borderPadding : 2
     }
     
     var extend = function (obj1, obj2) {
