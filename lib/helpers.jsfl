@@ -2,13 +2,13 @@
 var helpers = (function () {
 	var exports = {};
 	
-    /**
-     *
-     * @param {Object} matrix
-     * @param {{x : number, y : number}} transformPoint
-     * @param {Object} outTransform
-     * @returns {Object}
-     */
+	/**
+	 *
+	 * @param {Object} matrix
+	 * @param {{x : number, y : number}} transformPoint
+	 * @param {Object} outTransform
+	 * @returns {Object}
+	 */
 	exports.matrixToTransform = function (matrix, transformPoint, outTransform) {
 		outTransform.skewY = Math.atan2(matrix.b, matrix.a);
 		outTransform.skewX = Math.atan2(-matrix.c, matrix.d);
@@ -20,12 +20,12 @@ var helpers = (function () {
 		return outTransform;
 	}
 
-    /**
-     *
-     * @param {Object} m1
-     * @param {Object} m2
-     * @returns {Object}
-     */
+	/**
+	 *
+	 * @param {Object} m1
+	 * @param {Object} m2
+	 * @returns {Object}
+	 */
 	exports.matrixMultiply = function (m1,m2) {
 		var m3 = {a : 1, b : 0, c : 0, d : 1, tx : 0, ty : 0};
 		
@@ -97,23 +97,23 @@ var helpers = (function () {
 	exports.getTextureOrigin = function (doc, el) {
 		var x = el.x, y = el.y, originX = 0, originY = 0;
 
-        doc.selectNone();
-        doc.selection = [el]; //doc.selection adds to current selection!
+		doc.selectNone();
+		doc.selection = [el]; //doc.selection adds to current selection!
 
-        doc.clipCopy();
-        doc.clipPaste(true);
+		doc.clipCopy();
+		doc.clipPaste(true);
 
-        try {
-            doc.convertSelectionToBitmap(); //convert! now we know the size of the element with the filters and strokes
-            var duplicate = doc.selection[0]; //this should be the bitmap
-            originX = x - duplicate.left;
-            originY = y - duplicate.top;
-        }
-        catch(e) {
-            fl.trace(e.message);
-        }
+		try {
+			doc.convertSelectionToBitmap(); //convert! now we know the size of the element with the filters and strokes
+			var duplicate = doc.selection[0]; //this should be the bitmap
+			originX = x - duplicate.left;
+			originY = y - duplicate.top;
+		}
+		catch(e) {
+			fl.trace(e.message);
+		}
 
-        doc.library.deleteItem(duplicate.libraryItem.name);
+		doc.library.deleteItem(duplicate.libraryItem.name);
 		
 		return {x : originX, y : originY};
 	}

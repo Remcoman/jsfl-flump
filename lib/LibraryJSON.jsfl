@@ -36,17 +36,17 @@ var LibraryJSON = (function () {
 	var exports	= function (doc, config) {		
 		this.movies = [];
 		this.textureGroups = [];
-        this.config = config; //not used
+		this.config = config; //not used
 		this.frameRate = doc.frameRate;
-        this.baseScaleTextureFramesBySymbol = null;
-        this.baseScale = 1;
+		this.baseScaleTextureFramesBySymbol = null;
+		this.baseScale = 1;
 	}
 
 	exports.prototype = {
-        /**
-        * Groups the frames by img. The result will be: {img : [frame, frame]}
-        * @private
-        */
+		/**
+		* Groups the frames by img. The result will be: {img : [frame, frame]}
+		* @private
+		*/
 		_groupTextureFramesByImg : function (frames) {
 			var group = {};
 			frames.forEach(function (frame) {
@@ -58,42 +58,42 @@ var LibraryJSON = (function () {
 			});
 			return group;
 		},
-        
-        /**
-         * Groups the frames by symbol. The result will be: {symbol : frame} 
-         * @private
-         */
-        _groupTextureFramesBySymbol : function (frames) {
+
+		/**
+		 * Groups the frames by symbol. The result will be: {symbol : frame}
+		 * @private
+		 */
+		_groupTextureFramesBySymbol : function (frames) {
 			var group = {};
 			frames.forEach(function (frame) {
 				group[frame.symbol] = frame;
 			});
 			return group;
 		},
-        
-        /**
-         * Get the texture frames for the base scale (100%)
-         * When scale factor 1 is include it will just return frames for the scale factor. If not then we return an interpolated list of frames.
-         * @private
-         */
-        _getBaseScaleTextureFrames : function () {
-            if(this.textureFrames[0].scaleFactor === 1) {
-                return this.textureFrames[0].frames; //exact match found!
-            }
-            else {
-                var scale = 1 / this.textureFrames[0].scaleFactor,
-                    scaleArray = function (a) {return a * scale;}
-                
-                return this.textureFrames[0].frames.map(function (frame) {
-                    return {
-                        img : frame.img,
-                        rect : frame.rect.map(scaleArray),
-                        symbol : frame.symbol,
-                        origin : frame.origin.map(scaleArray)
-                    }
-                });
-            }
-        },
+
+		/**
+		 * Get the texture frames for the base scale (100%)
+		 * When scale factor 1 is include it will just return frames for the scale factor. If not then we return an interpolated list of frames.
+		 * @private
+		 */
+		_getBaseScaleTextureFrames : function () {
+			if(this.textureFrames[0].scaleFactor === 1) {
+				return this.textureFrames[0].frames; //exact match found!
+			}
+			else {
+				var scale = 1 / this.textureFrames[0].scaleFactor,
+					scaleArray = function (a) {return a * scale;}
+
+				return this.textureFrames[0].frames.map(function (frame) {
+					return {
+						img : frame.img,
+						rect : frame.rect.map(scaleArray),
+						symbol : frame.symbol,
+						origin : frame.origin.map(scaleArray)
+					}
+				});
+			}
+		},
 		
 		_writeFlipbookFrames : function (layerJSON, movieId, layer) {
 			layer.frames.forEach(function (frame, index) {
@@ -106,10 +106,10 @@ var LibraryJSON = (function () {
 					tweened : false,
 					pivot : [roundBy(origin[0], 4), roundBy(origin[1], 4)]
 				};
-                
-                if(frame.name) {
-				    kfJSON.label = frame.name;
-			    }
+
+				if(frame.name) {
+					kfJSON.label = frame.name;
+				}
 				
 				layerJSON.keyframes.push(kfJSON);
 			}, this);
@@ -220,10 +220,10 @@ var LibraryJSON = (function () {
 				}
 			}
 		},
-        
-        _getScaled : function (value) {
-            return value * this.baseScale;
-        },
+
+		_getScaled : function (value) {
+			return value * this.baseScale;
+		},
 		
 		_createKeyFrameJSON : function (frame, index) {
 			if(!frame.elements.length) {
@@ -290,14 +290,14 @@ var LibraryJSON = (function () {
 		
 		_getScaledPivot : function (element) {
 			var transformPoint = element.getTransformationPoint();
-            transformPoint.x = this._getScaled(transformPoint.x);
-            transformPoint.y = this._getScaled(transformPoint.y);
-            
+			transformPoint.x = this._getScaled(transformPoint.x);
+			transformPoint.y = this._getScaled(transformPoint.y);
+
 			var frameOrigin = [0,0];
 			if(this.baseScaleTextureFramesBySymbol[element.libraryItem.name]) {
 				frameOrigin = this.baseScaleTextureFramesBySymbol[element.libraryItem.name].origin;
 			}
-            
+
 			return {x : frameOrigin[0] + transformPoint.x, y : frameOrigin[1] + transformPoint.y};
 		},
 		
@@ -320,53 +320,53 @@ var LibraryJSON = (function () {
 				transformPoint = null,
 				rootMatrix = null,
 				flashKeyFrame = null,
-                prevKeyframeProps = {},
-                newKeyframeProps = {};
+				prevKeyframeProps = {},
+				newKeyframeProps = {};
 				
 			if(!layerJSON.compactKeyframes) {
 				layerJSON.compactKeyframes = [];
 			}
-            
-            var writeProps = function (isLast) {
-                var elementsIndex = layerJSON.compactKeyframes.length, //where to write the indicator
-                    elements = 0; //which elements (bitwise flag)
-                
-                if(newKeyframeProps.x !== prevKeyframeProps.x || newKeyframeProps.y !== prevKeyframeProps.y) {
-                    layerJSON.compactKeyframes.push( newKeyframeProps.x, newKeyframeProps.y );
-				    elements |= 1;
-                }
-                
-                if(newKeyframeProps.scaleX !== prevKeyframeProps.scaleX || newKeyframeProps.scaleY !== prevKeyframeProps.scaleY) {
-                    layerJSON.compactKeyframes.push( newKeyframeProps.scaleX, newKeyframeProps.scaleY );
-				    elements |= 2;
-                }
-                
-                if(newKeyframeProps.skewX !== prevKeyframeProps.skewX || newKeyframeProps.skewY !== prevKeyframeProps.skewY) {
-                    layerJSON.compactKeyframes.push( newKeyframeProps.skewX, newKeyframeProps.skewY );
-				    elements |= 4;
-                }
-                
-                if(newKeyframeProps.alpha !== prevKeyframeProps.alpha) {
-                    layerJSON.compactKeyframes.push( newKeyframeProps.alpha );
-				    elements |= 8;
-                }
-                
-                if(elements === 0 && !isLast) { //nothing to write
-                    return;
-                }
-                else if((newKeyframeProps.index - prevKeyframeProps.index) > 1) { //we skipped a couple of keyframes
-                    elements |= 16;
-                    layerJSON.compactKeyframes.push( newKeyframeProps.index - prevKeyframeProps.index );
-                }
-                
-                var temp = prevKeyframeProps;
-                prevKeyframeProps = newKeyframeProps;
-                newKeyframeProps = temp;
-                
-                layerJSON.compactKeyframes[elementsIndex] = elements;
-            }
-            
-            //TODO maybe we can sample for each second frame instead of each frame?
+
+			var writeProps = function (isLast) {
+				var elementsIndex = layerJSON.compactKeyframes.length, //where to write the indicator
+					elements = 0; //which elements (bitwise flag)
+
+				if(newKeyframeProps.x !== prevKeyframeProps.x || newKeyframeProps.y !== prevKeyframeProps.y) {
+					layerJSON.compactKeyframes.push( newKeyframeProps.x, newKeyframeProps.y );
+					elements |= 1;
+				}
+
+				if(newKeyframeProps.scaleX !== prevKeyframeProps.scaleX || newKeyframeProps.scaleY !== prevKeyframeProps.scaleY) {
+					layerJSON.compactKeyframes.push( newKeyframeProps.scaleX, newKeyframeProps.scaleY );
+					elements |= 2;
+				}
+
+				if(newKeyframeProps.skewX !== prevKeyframeProps.skewX || newKeyframeProps.skewY !== prevKeyframeProps.skewY) {
+					layerJSON.compactKeyframes.push( newKeyframeProps.skewX, newKeyframeProps.skewY );
+					elements |= 4;
+				}
+
+				if(newKeyframeProps.alpha !== prevKeyframeProps.alpha) {
+					layerJSON.compactKeyframes.push( newKeyframeProps.alpha );
+					elements |= 8;
+				}
+
+				if(elements === 0 && !isLast) { //nothing to write
+					return;
+				}
+				else if((newKeyframeProps.index - prevKeyframeProps.index) > 1) { //we skipped a couple of keyframes
+					elements |= 16;
+					layerJSON.compactKeyframes.push( newKeyframeProps.index - prevKeyframeProps.index );
+				}
+
+				var temp = prevKeyframeProps;
+				prevKeyframeProps = newKeyframeProps;
+				newKeyframeProps = temp;
+
+				layerJSON.compactKeyframes[elementsIndex] = elements;
+			}
+
+			//TODO maybe we can sample for each second frame instead of each frame?
 			layer.frames.forEach(function (frame, index) {
 				
 				if(typeof frame.startFrame === "undefined") {
@@ -394,25 +394,25 @@ var LibraryJSON = (function () {
 				
 				var offset = (index - flashKeyFrame.startFrame) - 1;
 
-                //getGeometricTransform returns a relative matrix :-(
+				//getGeometricTransform returns a relative matrix :-(
 				var elMatrix = helpers.matrixMultiply(flashKeyFrame.tweenObj.getGeometricTransform(offset), rootMatrix);
 				
-                //convert a matrix to scaleX, scaleY etc...
+				//convert a matrix to scaleX, scaleY etc...
 				helpers.matrixToTransform(elMatrix, transformPoint, transform);
 				
-                newKeyframeProps.x      = roundBy(this._getScaled(transform.x), 3);
-                newKeyframeProps.y      = roundBy(this._getScaled(transform.y), 3);
-                newKeyframeProps.scaleX = roundBy(transform.scaleX, 3);
-                newKeyframeProps.scaleY = roundBy(transform.scaleY, 3);
-                newKeyframeProps.skewX  = roundBy(transform.skewX, 3);
-                newKeyframeProps.skewY  = roundBy(transform.skewY, 3);
-                
-                var alpha = flashKeyFrame.tweenObj.getColorTransform(offset).colorAlphaPercent;
-                newKeyframeProps.alpha = roundBy(alpha / 100, 4);
-                
-                newKeyframeProps.index = index;
-                
-                writeProps(index === layer.frames.length-1);
+				newKeyframeProps.x      = roundBy(this._getScaled(transform.x), 3);
+				newKeyframeProps.y      = roundBy(this._getScaled(transform.y), 3);
+				newKeyframeProps.scaleX = roundBy(transform.scaleX, 3);
+				newKeyframeProps.scaleY = roundBy(transform.scaleY, 3);
+				newKeyframeProps.skewX  = roundBy(transform.skewX, 3);
+				newKeyframeProps.skewY  = roundBy(transform.skewY, 3);
+
+				var alpha = flashKeyFrame.tweenObj.getColorTransform(offset).colorAlphaPercent;
+				newKeyframeProps.alpha = roundBy(alpha / 100, 4);
+
+				newKeyframeProps.index = index;
+
+				writeProps(index === layer.frames.length-1);
 			}, this);
 		},
 		
@@ -422,10 +422,10 @@ var LibraryJSON = (function () {
 			if(layer.animationType === "motion object" || layer.layerType === "guided") {
 				this._writeInterpolatedFrames(layerJSON, layer);
 			}
-            else if(!!isFlipbookLayer) {
-                layerJSON.flipbook = true;
-                this._writeFlipbookFrames(layerJSON, movieJSON.id, layer);
-            }
+			else if(!!isFlipbookLayer) {
+				layerJSON.flipbook = true;
+				this._writeFlipbookFrames(layerJSON, movieJSON.id, layer);
+			}
 			else {
 				this._writeKeyFrames(layerJSON, layer);
 			}
@@ -439,9 +439,9 @@ var LibraryJSON = (function () {
 				var hasFlipbook = this.symbolBucket.hasFlipbook(movieSymbol.name);
 				
 				var layers = movieSymbol.timeline.layers;
-                
-                //todo rename duplicates?
-                
+
+				//todo rename duplicates?
+
 				for(var i=layers.length-1;i >= 0;i--) {
 					if(this._isValidLayer(layers[i], hasFlipbook)) {
 						this._writeLayer(movieJSON, layers[i], hasFlipbook && i === 0);
@@ -451,73 +451,73 @@ var LibraryJSON = (function () {
 				this.movies.push(movieJSON);
 			}, this);
 		},
-        
-        _writeAtlas : function (textureGroupJSON, img, frames) {
+
+		_writeAtlas : function (textureGroupJSON, img, frames) {
 			var atlasJSON = {
-                file : img, 
-                textures : frames.map(function (frame) {
-                    return {origin : frame.origin, rect : frame.rect, symbol : frame.symbol};
-                })
-            };
+				file : img,
+				textures : frames.map(function (frame) {
+					return {origin : frame.origin, rect : frame.rect, symbol : frame.symbol};
+				})
+			};
 			textureGroupJSON.atlases.push(atlasJSON);
 		},
-        
-        _writeTextureGroups : function () {
-            this.textureFrames.forEach(function (framesForScaleFactor) {
-                var textureGroupJSON = {scaleFactor : framesForScaleFactor.scaleFactor, atlases : []},
-                    framesByImg = this._groupTextureFramesByImg(framesForScaleFactor.frames);
 
-                for(var img in framesByImg) {
-                    this._writeAtlas(textureGroupJSON, img, framesByImg[img]);
-                }
-                
-                this.textureGroups.push(textureGroupJSON);
-            }, this);
-        },
-        
-        _isValidElement : function (element) {
-            return element.instanceType === "symbol" && this.symbolBucket.has(element.libraryItem.name); 
-        },
+		_writeTextureGroups : function () {
+			this.textureFrames.forEach(function (framesForScaleFactor) {
+				var textureGroupJSON = {scaleFactor : framesForScaleFactor.scaleFactor, atlases : []},
+					framesByImg = this._groupTextureFramesByImg(framesForScaleFactor.frames);
+
+				for(var img in framesByImg) {
+					this._writeAtlas(textureGroupJSON, img, framesByImg[img]);
+				}
+
+				this.textureGroups.push(textureGroupJSON);
+			}, this);
+		},
+
+		_isValidElement : function (element) {
+			return element.instanceType === "symbol" && this.symbolBucket.has(element.libraryItem.name);
+		},
 		
 		_isValidLayer : function (layer, hasFlipbook) {
-            if(!hasFlipbook) {
-                var everyKeyframeHasElement = getKeyframes(layer.frames).every(function (keyframe) {
-                    return !keyframe.frame.elements.length || this._isValidElement(keyframe.frame.elements[0]);
-                }, this);
-                
-                if(!everyKeyframeHasElement) {
-                    return false;
-                }
-            }
-            
+			if(!hasFlipbook) {
+				var everyKeyframeHasElement = getKeyframes(layer.frames).every(function (keyframe) {
+					return !keyframe.frame.elements.length || this._isValidElement(keyframe.frame.elements[0]);
+				}, this);
+
+				if(!everyKeyframeHasElement) {
+					return false;
+				}
+			}
+
 			return layer.layerType === "normal" || layer.layerType === "masked" || layer.layerType === "guided";
 		},
-        
-        _sortTextureFrames : function (textureFrames) {
-            textureFrames = textureFrames.concat();
-            textureFrames.sort(function (a, b) {
-                return a.scaleFactor - b.scaleFactor;
-            });
-            return textureFrames;
-        },
+
+		_sortTextureFrames : function (textureFrames) {
+			textureFrames = textureFrames.concat();
+			textureFrames.sort(function (a, b) {
+				return a.scaleFactor - b.scaleFactor;
+			});
+			return textureFrames;
+		},
 		
 		write : function (textureFrames, symbolBucket, baseScale) {
-            if(!textureFrames.length) {
-                return false;
-            }
-        
+			if(!textureFrames.length) {
+				return false;
+			}
+
 			this.symbolBucket = symbolBucket;
 			this.textureFrames = this._sortTextureFrames(textureFrames);
-            this.baseScale = baseScale;
-            
-            this.baseScaleTextureFramesBySymbol = this._groupTextureFramesBySymbol( this._getBaseScaleTextureFrames() );
+			this.baseScale = baseScale;
+
+			this.baseScaleTextureFramesBySymbol = this._groupTextureFramesBySymbol( this._getBaseScaleTextureFrames() );
 			
 			this._writeTextureGroups();
 			this._writeMovies();
-            
-            return true;
+
+			return true;
 		},
-        
+
 		toJSON : function () {
 			return JSON.encode({
 				movies : this.movies,

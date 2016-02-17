@@ -4,29 +4,29 @@
 
 var customEaseToJSON = (function () {
 
-    var propertyMap = {
-        position : "position",
-        rotation : "rotation",
-        scale    : "scale",
-        color    : "alpha"
-    }
+	var propertyMap = {
+		position : "position",
+		rotation : "rotation",
+		scale    : "scale",
+		color    : "alpha"
+	}
 
-    return function (frame) {
-        var json = {properties : []};
+	return function (frame) {
+		var json = {properties : []};
 
-        if(frame.useSingleEaseCurve) {
-            //we chop of the first and the last because they are always the same
-            var points = frame.getCustomEase("all").slice(1, -1);
-            for(var prop in propertyMap) {
-                json.properties.push({name : propertyMap[prop], points : points});
-            }
-        }
-        else {
-            for(var prop in propertyMap) {
+		if(frame.useSingleEaseCurve) {
+			//we chop of the first and the last because they are always the same
+			var points = frame.getCustomEase("all").slice(1, -1);
+			for(var prop in propertyMap) {
+				json.properties.push({name : propertyMap[prop], points : points});
+			}
+		}
+		else {
+			for(var prop in propertyMap) {
 				json.properties.push({name : propertyMap[prop], points : frame.getCustomEase(prop).slice(1, -1)});
-            }
-        }
+			}
+		}
 
-        return json;
-    }
+		return json;
+	}
 })();
