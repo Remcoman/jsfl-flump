@@ -31,10 +31,13 @@ var FlumpSpriteSheetExporter = (function () {
         this.shapePadding = options.shapePadding;
         this.borderPadding = options.borderPadding;
         
-        this.metadataPaths = [];
 		this.exporter = new SpriteSheetExporter();
         this.tooLargeSprites = [];
         this.tooLargeFlipbooks = [];
+        
+        //output
+        this.metadataPaths = [];
+        this.error = null;
 	}
 	
 	SpriteSheetWriter.prototype = {
@@ -84,6 +87,7 @@ var FlumpSpriteSheetExporter = (function () {
 				var element = flipbooks.shift();
 				
 				fl.trace("adding flipbook '" + element.name.slice(0, -1) + "' to spritesheet");
+                
 				this.exporter.addSymbol(element, element.name, 0, element.libraryItem.timeline.frameCount);
 
 				if(this.exporter.overflowed) {
@@ -118,11 +122,21 @@ var FlumpSpriteSheetExporter = (function () {
 			while(i++ < 10 && (this.sprites.length || this.flipbooks.length)) {
 				this._writeSingle(this.sprites, this.flipbooks);
 			}
+            
             i = 0;
             while(i++ < 10 && (this.tooLargeSprites.length || this.tooLargeFlipbooks.length)) {
-                this.maxSize = this.nextPowerOfTwo(this.maxSize);
+                this.maxSize = this.nextPowerOfTwo(this.maxSize+1);
+                
+                var spriteNames = this.tooLargeSprites.map(function (sprite) {return sprite.name.slice(0,-1);});
+                var flipbookNames = this.tooLargeFlipbooks.map(function (flipbook) {return flipbook.name.slice(0,-1);});
+                
+                fl.trace("Enlarging spritesheet to " + this.maxSize + " and retrying: " + spriteNames.concat(flipbookNames).join(","));
 				this._writeSingle(this.tooLargeSprites, this.tooLargeFlipbooks);
 			}
+            
+            if(this.tooLargeSprites.length || this.tooLargeFlipbooks.length) {
+                this.error = new Error("Sprites where too large and even when trying bigger spritesheets it would not fit :-(");
+            }
 		}
 	}
 	
@@ -236,7 +250,7 @@ var FlumpSpriteSheetExporter = (function () {
 			
 			writer.write();
 			
-			return writer.metadataPaths;
+			return writer;
 		},
 		
 		_cleanup : function (metadataPaths) {
@@ -290,11 +304,19 @@ var FlumpSpriteSheetExporter = (function () {
 		export : function (symbolBucket, outputDir, scale, spriteSheetSuffix) {
 			this._prepareTemporaryTimeline(symbolBucket, scale);
 			this._extractTextureOrigins();
-			var metadataPaths = this._writeSpriteSheets(outputDir, spriteSheetSuffix);
-			var frames = this._readFrames(symbolBucket, metadataPaths);
-			this._cleanup(metadataPaths);
             
-            return frames;
+			var result = this._writeSpriteSheets(outputDir, spriteSheetSuffix);
+            
+            if(result.error) {
+                this.error = result.error;
+                return false;
+            }
+            
+			this.frames = this._readFrames(symbolBucket, result.metadataPaths);
+            
+			this._cleanup(result.metadataPaths);
+            
+            return true;
 		}
 	}
 	

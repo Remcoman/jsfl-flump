@@ -60,18 +60,31 @@ var processDocument = function (doc) {
         
         var exporter = new FlumpSpriteSheetExporter(doc, config);
         
-        var frames = config.scaleFactors.map(function (factor) {
-            fl.trace("exporting spritesheet for scaleFactor: " + factor);
+        var frames = config.scaleFactors
+            .map(function (factor) {
+                fl.trace("exporting spritesheet for scaleFactor: " + factor);
             
-            var frames = exporter.export(symbolBucket, outputDir, factor*config.baseScale, path.pixelRatioSuffix(factor));
-            return {scaleFactor : factor, frames : frames};
-        });
+                if(!exporter.export(symbolBucket, outputDir, factor*config.baseScale, path.pixelRatioSuffix(factor))) {
+                    fl.trace("Error when outputting spritesheet for scaleFactor " + factor + " " + exporter.error);
+                    return null;
+                }
+            
+                return {scaleFactor : factor, frames : exporter.frames};
+            })
+            .filter(function (frames) {
+                return frames !== null;
+            });
 
-        //library json is always at original size 
-        var lib = new LibraryJSON(doc);
-        lib.write(frames, symbolBucket, config.baseScale);
+        if(frames.length) {
+            //library json is always at original size 
+            var lib = new LibraryJSON(doc);
+            lib.write(frames, symbolBucket, config.baseScale);
 
-        FLfile.write(outputDir + "/library.json", lib.toJSON());
+            FLfile.write(outputDir + "/library.json", lib.toJSON());
+        }
+        else {
+            fl.trace("Nothing to write");
+        }
         
         fl.trace("done!");
     }

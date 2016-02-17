@@ -502,6 +502,10 @@ var LibraryJSON = (function () {
         },
 		
 		write : function (textureFrames, symbolBucket, baseScale) {
+            if(!textureFrames.length) {
+                return false;
+            }
+        
 			this.symbolBucket = symbolBucket;
 			this.textureFrames = this._sortTextureFrames(textureFrames);
             this.baseScale = baseScale;
@@ -510,6 +514,8 @@ var LibraryJSON = (function () {
 			
 			this._writeTextureGroups();
 			this._writeMovies();
+            
+            return true;
 		},
         
 		toJSON : function () {
