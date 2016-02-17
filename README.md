@@ -42,9 +42,9 @@ A compact keyframe has the following structure:
         "compactIndex":100
     }
     
-The compact index points to an index in a seperate "compactKeyframes" array (which is located in the layer). The compactKeyFrames array has the following elements:
+The compact index points to an index in a separate "compactKeyframes" array (which is located in the layer). The compactKeyFrames array has the following elements:
 
-- a bitwise number (marker) describing which properties are available for that keyframe. position=1, scale=2, skew=4, alpha=8
+- a bitwise number (marker) describing which properties are available for that keyframe. position=1, scale=2, skew=4, alpha=8. These are OR'ed together.
 - x,y values if position is available
 - scaleX, scaleY if scale is available
 - skewX, skewY if skew is available
