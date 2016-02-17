@@ -12,6 +12,9 @@ Convert Flash animations to Flump format using a jsfl Flash command. For more in
 - Run the flumpify command
 - Profit!
 
+# Compatibility
+This jsfl currently only works with Flash (Animate) CC. I tried to make it work with Flash CS6 but it mostly seemed to crash during spritesheet creation. 
+
 # what's missing?
 - A better way to handle motion guides & motion tween objects. Currently it writes just every frame.
 
@@ -59,6 +62,10 @@ scaleFactors determine which sizes are to be exported relative to the baseScale.
 You can create a flumpify json at the same location as the fla. This json file has the following structure:
 
     {
-        "baseDir" : "The directory where the flump files are created. This setting replaces the dialog that appears everytime you export",
-        "pixelRatio" : "The pixel ratio of the fla file. This setting replaces the "@2x" fla filename suffix.
+        "baseDir"       : "The directory where the flump files are created. This setting replaces the dialog that appears everytime you export",
+        "baseScale"     : 1,
+        "scaleFactors"  : [1],
+        "maxSize"       : 2048,
+        "shapePadding"  : 2,
+        "borderPadding" : 2
     }
