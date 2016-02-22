@@ -20,11 +20,15 @@ var flumpifyConfig = (function () {
 
 	return {
 		read : function (doc) {
-			var configPath = path.dirname(doc.pathURI) + "/flumpify.json",
+			var config = baseConfig;
+		
+			if(doc.pathURI) {
+				var configPath = path.dirname(doc.pathURI) + "/flumpify.json",
 				config = extend({}, baseConfig);
 
-			if(FLfile.exists(configPath)) {
-				extend(config, JSON.decode(FLfile.read(configPath)));
+				if(FLfile.exists(configPath)) {
+					extend(config, JSON.decode(FLfile.read(configPath)));
+				}
 			}
 
 			return config;

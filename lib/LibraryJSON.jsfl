@@ -419,12 +419,13 @@ var LibraryJSON = (function () {
 		_writeLayer : function (movieJSON, layer, isFlipbookLayer) {
 			var layerJSON = {name : layer.name, keyframes : []};
 
-			if(layer.animationType === "motion object" || layer.layerType === "guided") {
-				this._writeInterpolatedFrames(layerJSON, layer);
-			}
-			else if(!!isFlipbookLayer) {
+			if(!!isFlipbookLayer) {
 				layerJSON.flipbook = true;
+				fl.trace(movieJSON.id);
 				this._writeFlipbookFrames(layerJSON, movieJSON.id, layer);
+			}
+			else if(layer.animationType === "motion object" || layer.layerType === "guided") {
+				this._writeInterpolatedFrames(layerJSON, layer);
 			}
 			else {
 				this._writeKeyFrames(layerJSON, layer);

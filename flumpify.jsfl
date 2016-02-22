@@ -25,6 +25,7 @@ var processDocument = function (doc) {
     var docPixelRatioName = path.resolvePixelRatio(doc.name);
 
 	//name of fla without the extension
+	
 	var outputName = path.basename(docPixelRatioName.path, ".fla");
 
     //attempt to read flumpify config
@@ -32,11 +33,12 @@ var processDocument = function (doc) {
 	
     //ask for the output directory if undefined
     if(!config.baseDir) { 
-        var initialDir = doc.path ? path.dirname(doc.path) : null;
+		var initialDir = doc.path ? path.dirname(doc.path) : null;
+		
         config.baseDir = fl.browseForFolderURL("Select the destination folder where the output folder '" + outputName + "' is created", initialDir );
         if(!config.baseDir) { //canceled
             return;
-        }    
+        }
     }
 	else {
 		config.baseDir = FLfile.platformPathToURI(path.resolve(path.dirname(doc.path), config.baseDir));

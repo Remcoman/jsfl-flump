@@ -180,7 +180,10 @@ var FlumpSpriteSheetExporter = (function () {
 			this.tempSymbols.length = 0;
 		},
 
-		_addItemToDoc: function (symbolName, scale) {
+		_addItemToDoc: function (symbol, scale) {
+			//todo to correctly support 3d items we must keep the absolute position somehow :-(
+			var symbolName = symbol.name;
+		
 			this.doc.library.addItemToDocument({x: 0, y: 0}, symbolName);
 			var item = this.doc.selection[0];
 			item.scaleX = item.scaleY = scale;
@@ -213,7 +216,7 @@ var FlumpSpriteSheetExporter = (function () {
 			//add all sprites to layer 0
 			tl.setSelectedLayers(0, true);
 			symbolBucket.sprites.forEach(function (symbol) {
-				this._addItemToDoc(symbol.name, scale);
+				this._addItemToDoc(symbol, scale);
 			}, this);
 
 			//add all flipbooks to layer 1
@@ -226,7 +229,7 @@ var FlumpSpriteSheetExporter = (function () {
 						symbol.timeline.deleteLayer(i);
 					}
 				}
-				this._addItemToDoc(symbol.name, scale);
+				this._addItemToDoc(symbol, scale);
 			}, this);
 		},
 
