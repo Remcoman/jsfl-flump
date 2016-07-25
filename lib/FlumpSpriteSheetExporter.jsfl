@@ -43,6 +43,9 @@ var FlumpSpriteSheetExporter = (function () {
 	SpriteSheetWriter.prototype = {
 
 		_writeSingle: function (sprites, flipbooks) {
+			this.tooLargeSprites = [];
+			this.tooLargeFlipbooks = [];
+
 			this.exporter.beginExport();
 
 			//reset all the values
@@ -55,6 +58,7 @@ var FlumpSpriteSheetExporter = (function () {
 			this.exporter.maxSheetHeight = this.exporter.maxSheetWidth = this.maxSize;
 
 			var firstItem = true;
+			var canSave = false;
 
 			//TODO if the first item does not fit into spritesheet then we need to enlarge the spritesheet
 
@@ -80,6 +84,9 @@ var FlumpSpriteSheetExporter = (function () {
 					this.exporter.removeSymbol(element);
 					break;
 				}
+				else {
+					canSave = true;
+				}
 			}
 
 			//write flipbooks until there is no more space
@@ -103,18 +110,23 @@ var FlumpSpriteSheetExporter = (function () {
 					this.exporter.removeSymbol(element);
 					break;
 				}
+				else {
+					canSave = true;
+				}
 			}
 
-			var spriteSheetPath = this.outputDir + "/atlas" + this.metadataPaths.length + this.fileNameSuffix;
-			this.metadataPaths.push(spriteSheetPath + ".json");
+			if(canSave) {
+				var spriteSheetPath = this.outputDir + "/atlas" + this.metadataPaths.length + this.fileNameSuffix;
+				this.metadataPaths.push(spriteSheetPath + ".json");
 
-			fl.trace("writing '" + spriteSheetPath + "'");
+				fl.trace("writing '" + spriteSheetPath + "'");
 
-			this.exporter.exportSpriteSheet(spriteSheetPath, {
-				format: "png",
-				bitDepth: 32,
-				backgroundColor: "#00000000"
-			}, true);
+				this.exporter.exportSpriteSheet(spriteSheetPath, {
+					format: "png",
+					bitDepth: 32,
+					backgroundColor: "#00000000"
+				}, true);
+			}
 		},
 
 		nextPowerOfTwo: function (x) {

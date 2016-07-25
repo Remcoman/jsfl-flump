@@ -97,7 +97,13 @@ var LibraryJSON = (function () {
 		
 		_writeFlipbookFrames : function (layerJSON, movieId, layer) {
 			layer.frames.forEach(function (frame, index) {
-				var origin = this.baseScaleTextureFramesBySymbol[movieId + "#" + index].origin;
+				var fr = this.baseScaleTextureFramesBySymbol[movieId + "#" + index], origin;
+				if(fr) {
+					origin = fr.origin;
+				}
+				else {
+					origin = [0,0];
+				}
 				
 				var kfJSON = {
 					duration : 1, 
@@ -421,7 +427,6 @@ var LibraryJSON = (function () {
 
 			if(!!isFlipbookLayer) {
 				layerJSON.flipbook = true;
-				fl.trace(movieJSON.id);
 				this._writeFlipbookFrames(layerJSON, movieJSON.id, layer);
 			}
 			else if(layer.animationType === "motion object" || layer.layerType === "guided") {
